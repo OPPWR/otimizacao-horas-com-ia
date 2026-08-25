@@ -93,6 +93,40 @@
   .segmented button.active{background:var(--surface);color:var(--ink);box-shadow:0 1px 3px rgba(10,27,51,0.12);}
 
   .filter-label{font-size:11.5px;color:var(--ink-mute);font-weight:600;text-transform:uppercase;letter-spacing:0.04em;margin-right:1px;}
+  .select-filter{
+    background:var(--neutral-soft);border:1px solid var(--line);border-radius:10px;
+    padding:6px 10px;font-size:12.5px;color:var(--ink);font-family:inherit;max-width:200px;
+  }
+
+  /* resumo do consultor selecionado */
+  .consultor-resumo{
+    display:none;background:var(--surface-2);border:1px solid var(--line);border-radius:12px;
+    padding:14px 18px;margin-bottom:14px;gap:18px;align-items:center;flex-wrap:wrap;
+  }
+  .consultor-resumo.show{display:flex;}
+  .consultor-resumo .cr-nome{font-family:"Sora",sans-serif;font-weight:700;font-size:15px;color:var(--ink);}
+  .consultor-resumo .cr-cargo{font-size:12px;color:var(--ink-mute);}
+  .consultor-resumo .cr-stat{font-size:12.5px;color:var(--ink-soft);}
+  .consultor-resumo .cr-stat b{font-variant-numeric:tabular-nums;color:var(--ink);}
+  .consultor-resumo .cr-badge{
+    margin-left:auto;font-family:"Sora",sans-serif;font-weight:700;font-size:13px;
+    padding:6px 14px;border-radius:999px;white-space:nowrap;
+  }
+  .consultor-resumo .cr-badge.down{background:var(--down-soft);color:var(--down);}
+  .consultor-resumo .cr-badge.up{background:var(--accent-soft);color:var(--accent);}
+  .consultor-resumo .cr-badge.flat{background:var(--neutral-soft);color:var(--ink-mute);}
+
+  /* tabela compacta (Projetos x Consultor) — cabe sem scroll horizontal */
+  table.tbl-compact{table-layout:fixed;width:100%;min-width:0;}
+  table.tbl-compact .col-cons{width:16%;}
+  table.tbl-compact .col-proj{width:30%;}
+  table.tbl-compact .col-unidade{width:11%;}
+  table.tbl-compact .col-spark{width:16%;}
+  table.tbl-compact .col-num{width:14%;}
+  table.tbl-compact td.name, table.tbl-compact td.proj{
+    white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:0;
+  }
+  table.tbl-compact .spark{width:100%;max-width:78px;}
   .count-pill{font-size:12px;color:var(--ink-mute);white-space:nowrap;margin-left:auto;}
 
   .table-scroll{overflow-x:auto;border:1px solid var(--line);border-radius:14px;background:var(--surface);box-shadow:var(--shadow);}
@@ -285,11 +319,15 @@
     <div class="card">
       <h3>Resumo por Consultor × Projeto</h3>
       <p class="sub">Só pares com débito em todos os 8 meses, projeto com Status = Ativo na base SPWR, e consultor
-      ativo hoje (aba Usuários) e já alocado desde Dez/25 (aba Alocações). Unidade e Interno vêm da base de
-      Contratos (Bases SPWR). Horas excluem débitos de Deslocamento (fonte: Débitos BH, Bases SPWR).</p>
+      ativo hoje (aba Usuários) e já alocado desde Dez/25 (aba Alocações). Unidade vem da base de Contratos (Bases
+      SPWR); Interno filtrável no controle acima. Horas excluem débitos de Deslocamento (fonte: Débitos BH, Bases
+      SPWR). Ordenado por consultor por padrão — escolha um nome no filtro "Consultor" pra ver o resumo dela nos
+      projetos em que está alocada.</p>
 
       <div class="controls">
         <div class="search"><input id="search-cxp" type="text" placeholder="Buscar consultor ou projeto…"></div>
+        <span class="filter-label">Consultor</span>
+        <select class="select-filter" id="filtroConsultor-cxp"><option value="todos">Todos</option></select>
         <span class="filter-label">Interno</span>
         <div class="segmented" id="filtroInterno-cxp">
           <button data-v="nao" class="active">Não</button>
@@ -313,19 +351,19 @@
         <span class="count-pill" id="countPill-cxp"></span>
       </div>
 
+      <div id="consultorResumo-cxp"></div>
+
       <div class="table-scroll">
-        <table id="tbl-cxp">
+        <table id="tbl-cxp" class="tbl-compact">
           <thead>
             <tr>
-              <th data-k="cons">Consultor <span class="arrow">↕</span></th>
-              <th data-k="proj">Projeto <span class="arrow">↕</span></th>
-              <th data-k="cargo">Cargo <span class="arrow">↕</span></th>
-              <th data-k="unidade">Unidade <span class="arrow">↕</span></th>
-              <th data-k="interno">Interno <span class="arrow">↕</span></th>
-              <th>Dez → Jul (horas)</th>
-              <th class="num" data-k="ms">Média Sem IA <span class="arrow">↕</span></th>
-              <th class="num" data-k="mc">Média Com IA <span class="arrow">↕</span></th>
-              <th class="num" data-k="vp">Variação <span class="arrow">↕</span></th>
+              <th data-k="cons" class="col-cons">Consultor <span class="arrow">↕</span></th>
+              <th data-k="proj" class="col-proj">Projeto <span class="arrow">↕</span></th>
+              <th data-k="unidade" class="col-unidade">Unidade <span class="arrow">↕</span></th>
+              <th class="col-spark">Dez → Jul</th>
+              <th class="num col-num" data-k="ms">Sem IA <span class="arrow">↕</span></th>
+              <th class="num col-num" data-k="mc">Com IA <span class="arrow">↕</span></th>
+              <th class="num col-num" data-k="vp">Variação <span class="arrow">↕</span></th>
             </tr>
           </thead>
           <tbody id="tbody-cxp"></tbody>
@@ -564,8 +602,8 @@ document.querySelectorAll('.tabbtn').forEach(btn=>{
 
 /* ===================== PAINEL PROJETOS X CONSULTOR ===================== */
 (function(){
-  let internoFiltro = 'nao', unidadeFiltro = 'todos', tendFiltro = 'todos', query = '';
-  let sortKey = 'vp', sortDir = -1;
+  let internoFiltro = 'nao', unidadeFiltro = 'todos', tendFiltro = 'todos', consultorFiltro = 'todos', query = '';
+  let sortKey = 'cons', sortDir = 1;
 
   function baseFiltrado(){
     return DATA_CXP.filter(r => {
@@ -576,8 +614,47 @@ document.querySelectorAll('.tabbtn').forEach(btn=>{
     });
   }
 
+  function atualizaDropdownConsultor(filt){
+    const sel = document.getElementById('filtroConsultor-cxp');
+    const nomes = Array.from(new Set(filt.map(r=>r.cons))).sort((a,b)=>a.localeCompare(b,'pt-BR'));
+    const atual = consultorFiltro;
+    sel.innerHTML = '<option value="todos">Todos</option>' +
+      nomes.map(n=>`<option value="${n}">${n}</option>`).join('');
+    if(nomes.includes(atual)){ sel.value = atual; } else { consultorFiltro = 'todos'; sel.value = 'todos'; }
+  }
+
+  function renderResumoConsultor(rowsDoConsultor){
+    const el = document.getElementById('consultorResumo-cxp');
+    if(consultorFiltro === 'todos' || !rowsDoConsultor.length){
+      el.className = 'consultor-resumo';
+      el.innerHTML = '';
+      return;
+    }
+    const semTotal = rowsDoConsultor.reduce((s,r)=>s+(r.ms||0),0);
+    const comTotal = rowsDoConsultor.reduce((s,r)=>s+(r.mc||0),0);
+    const varAbs = comTotal - semTotal;
+    const varPct = semTotal ? (comTotal/semTotal-1)*100 : null;
+    let cls='flat', label='➖ Estável nesses projetos';
+    if(varPct !== null && varPct <= -10 && varAbs <= -3){ cls='down'; label='▼ Otimizando horas nesses projetos'; }
+    else if(varPct !== null && varPct >= 10 && varAbs >= 3){ cls='up'; label='▲ Aumentando horas nesses projetos'; }
+    const cargo = rowsDoConsultor[0].cargo || '—';
+    el.className = 'consultor-resumo show';
+    el.innerHTML = `
+      <div>
+        <div class="cr-nome">${consultorFiltro}</div>
+        <div class="cr-cargo">${cargo}</div>
+      </div>
+      <div class="cr-stat">${rowsDoConsultor.length} projeto${rowsDoConsultor.length===1?'':'s'} neste recorte</div>
+      <div class="cr-stat">Sem IA: <b>${fmt1(semTotal)}h/mês</b></div>
+      <div class="cr-stat">Com IA: <b>${fmt1(comTotal)}h/mês</b></div>
+      <div class="cr-stat">Variação: <b>${fmtPct(varPct===null?null:Math.round(varPct*10)/10)}</b></div>
+      <div class="cr-badge ${cls}">${label}</div>
+    `;
+  }
+
   function render(){
     const filt = baseFiltrado();
+    atualizaDropdownConsultor(filt);
     document.getElementById('kpiT-cxp').textContent = filt.length;
     document.getElementById('kpiQ-cxp').textContent = filt.filter(r=>r.tend==='queda').length;
     document.getElementById('kpiA-cxp').textContent = filt.filter(r=>r.tend!=='queda').length;
@@ -591,6 +668,7 @@ document.querySelectorAll('.tabbtn').forEach(btn=>{
     const q = query.trim().toLowerCase();
     let rows = filt.filter(r => {
       if(tendFiltro !== 'todos' && r.tend !== tendFiltro) return false;
+      if(consultorFiltro !== 'todos' && r.cons !== consultorFiltro) return false;
       if(!q) return true;
       return r.cons.toLowerCase().includes(q) || r.proj.toLowerCase().includes(q);
     });
@@ -602,14 +680,15 @@ document.querySelectorAll('.tabbtn').forEach(btn=>{
       if(typeof av === 'string') return av.localeCompare(bv,'pt-BR') * sortDir;
       return (av-bv) * sortDir;
     });
+
+    renderResumoConsultor(consultorFiltro === 'todos' ? [] : rows);
+
     document.getElementById('countPill-cxp').textContent = rows.length + ' de ' + filt.length + ' pares';
     document.getElementById('tbody-cxp').innerHTML = rows.map(r => `
       <tr>
-        <td class="name">${r.cons}</td>
-        <td class="proj">${r.proj}</td>
-        <td class="cargo">${r.cargo || '<span class="muted">—</span>'}</td>
+        <td class="name" title="${r.cargo || ''}">${r.cons}</td>
+        <td class="proj" title="${r.proj}">${r.proj}</td>
         <td>${r.unidade ? `<span class="tag-unidade">${r.unidade}</span>` : '<span class="muted">—</span>'}</td>
-        <td>${r.interno ? '<span class="tag-pill">Sim</span>' : '<span class="muted">Não</span>'}</td>
         <td>${sparkline(r, N_SEM_IA)}</td>
         <td class="num">${fmt1(r.ms)}</td>
         <td class="num">${fmt1(r.mc)}</td>
@@ -619,6 +698,9 @@ document.querySelectorAll('.tabbtn').forEach(btn=>{
   }
 
   document.getElementById('search-cxp').addEventListener('input', e=>{ query = e.target.value; render(); });
+  document.getElementById('filtroConsultor-cxp').addEventListener('change', function(){
+    consultorFiltro = this.value; render();
+  });
   document.querySelectorAll('#filtroInterno-cxp button').forEach(btn=>{
     btn.addEventListener('click', function(){
       internoFiltro = this.dataset.v;
@@ -643,7 +725,7 @@ document.querySelectorAll('.tabbtn').forEach(btn=>{
   document.querySelectorAll('#tbl-cxp thead th[data-k]').forEach(th=>{
     th.addEventListener('click', ()=>{
       const k = th.dataset.k;
-      if(sortKey === k){ sortDir *= -1; } else { sortKey = k; sortDir = ['cons','proj','cargo','unidade','interno'].includes(k) ? 1 : -1; }
+      if(sortKey === k){ sortDir *= -1; } else { sortKey = k; sortDir = ['cons','proj','unidade'].includes(k) ? 1 : -1; }
       render();
     });
   });
