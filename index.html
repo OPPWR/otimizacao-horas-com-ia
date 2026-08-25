@@ -1,0 +1,729 @@
+<title>Painel de Horas com IA</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Sora:wght@500;600;700;800&family=Plus+Jakarta+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@500;600&display=swap">
+<style>
+  :root{
+    --bg:#F3F5FB; --surface:#FFFFFF; --surface-2:#F8F9FD; --line:#E1E5F2;
+    --ink:#0A1B33; --ink-soft:#273A76; --ink-mute:#5C6A94;
+    --brand-dark:#05244F; --brand-mid:#273A76; --brand-light:#3C58B4;
+    --accent:#FF5B00; --accent-soft:#FFF0E6; --accent-line:#FFD3B8;
+    --down:#3C58B4; --down-soft:#EAEEFA; --neutral-soft:#EDEFF6;
+    --shadow: 0 1px 2px rgba(10,27,51,0.04), 0 8px 24px -12px rgba(10,27,51,0.12);
+  }
+  @media (prefers-color-scheme: dark){
+    :root:not([data-theme="light"]){
+      --bg:#0A1626; --surface:#101E33; --surface-2:#0D1A2C; --line:#1E3050;
+      --ink:#EDF1FB; --ink-soft:#C4CEE8; --ink-mute:#8B9AC4;
+      --brand-dark:#0A2E5C; --brand-mid:#3C58B4; --brand-light:#5B7AD6;
+      --accent:#FF7A2E; --accent-soft:#2A1A10; --accent-line:#5A3218;
+      --down:#5B7AD6; --down-soft:#152140; --neutral-soft:#16233B;
+      --shadow: 0 1px 2px rgba(0,0,0,0.3), 0 8px 24px -12px rgba(0,0,0,0.5);
+    }
+  }
+  :root[data-theme="dark"]{
+    --bg:#0A1626; --surface:#101E33; --surface-2:#0D1A2C; --line:#1E3050;
+    --ink:#EDF1FB; --ink-soft:#C4CEE8; --ink-mute:#8B9AC4;
+    --brand-dark:#0A2E5C; --brand-mid:#3C58B4; --brand-light:#5B7AD6;
+    --accent:#FF7A2E; --accent-soft:#2A1A10; --accent-line:#5A3218;
+    --down:#5B7AD6; --down-soft:#152140; --neutral-soft:#16233B;
+    --shadow: 0 1px 2px rgba(0,0,0,0.3), 0 8px 24px -12px rgba(0,0,0,0.5);
+  }
+
+  *{box-sizing:border-box;}
+  body{margin:0;background:var(--bg);color:var(--ink);font-family:"Plus Jakarta Sans", ui-sans-serif, system-ui, sans-serif;-webkit-font-smoothing:antialiased;}
+  .wrap{max-width:1220px;margin:0 auto;padding:0 24px 64px;}
+
+  .topbar{background:linear-gradient(135deg, var(--brand-dark), var(--brand-mid) 130%);color:#fff;padding:26px 24px 0;margin-bottom:26px;}
+  .topbar-inner{max-width:1220px;margin:0 auto;}
+  .topbar-head{display:flex;align-items:center;justify-content:space-between;gap:24px;flex-wrap:wrap;padding-bottom:20px;}
+  .brandmark{display:flex;align-items:center;gap:12px;}
+  .brandmark .glyph{width:34px;height:34px;border-radius:50%;background:rgba(255,255,255,0.1);display:flex;align-items:center;justify-content:center;color:var(--accent);font-size:18px;font-weight:800;border:1.5px solid rgba(255,255,255,0.25);}
+  .brandmark .word{font-family:"Sora",sans-serif;font-weight:700;font-size:14px;letter-spacing:0.02em;}
+  .brandmark .word b{color:var(--accent);}
+  .topbar h1{font-family:"Sora",sans-serif;font-weight:700;font-size:clamp(20px,3vw,27px);margin:10px 0 4px;text-wrap:balance;letter-spacing:-0.01em;}
+  .topbar p{margin:0;color:rgba(255,255,255,0.72);font-size:14px;max-width:64ch;}
+  .period-pill{background:rgba(255,255,255,0.08);border:1px solid rgba(255,255,255,0.18);border-radius:999px;padding:8px 16px;font-size:12.5px;color:#fff;white-space:nowrap;}
+  .period-pill b{color:var(--accent);font-weight:700;}
+
+  .tabbar{display:flex;gap:4px;max-width:1220px;margin:0 auto;}
+  .tabbtn{
+    background:transparent;border:none;color:rgba(255,255,255,0.62);font-family:"Sora",sans-serif;
+    font-weight:600;font-size:13.5px;padding:12px 20px;cursor:pointer;border-radius:10px 10px 0 0;
+    position:relative;top:1px;
+  }
+  .tabbtn.active{background:var(--bg);color:var(--brand-dark);}
+  .tabbtn:not(.active):hover{color:#fff;background:rgba(255,255,255,0.08);}
+
+  .panel{display:none;}
+  .panel.active{display:block;}
+
+  .kpis{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin-bottom:22px;}
+  .kpis.k5{grid-template-columns:repeat(5,1fr);}
+  .kpi{background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:18px 18px 16px;box-shadow:var(--shadow);}
+  .kpi .label{font-size:11px;text-transform:uppercase;letter-spacing:0.06em;color:var(--ink-mute);font-weight:600;}
+  .kpi .value{font-family:"Sora",sans-serif;font-weight:700;font-size:24px;margin-top:6px;color:var(--ink);font-variant-numeric:tabular-nums;}
+  .kpi .value span.unit{font-size:13px;font-weight:600;color:var(--ink-mute);margin-left:2px;}
+  .kpi .note{font-size:12px;color:var(--ink-mute);margin-top:6px;line-height:1.4;}
+  .kpi.down .value{color:var(--down);}
+  .kpi.up .value{color:var(--accent);}
+  .kpi.warn{border-color:var(--accent-line);}
+  .kpi.warn .value{color:var(--accent);}
+
+  .callout{background:var(--surface);border:1px solid var(--line);border-left:4px solid var(--accent);border-radius:10px;padding:18px 20px;margin-bottom:26px;box-shadow:var(--shadow);}
+  .callout .tag{font-size:11px;font-weight:700;letter-spacing:0.08em;text-transform:uppercase;color:var(--accent);}
+  .callout h2{font-family:"Sora",sans-serif;font-size:16.5px;margin:6px 0 8px;color:var(--ink);font-weight:700;}
+  .callout p{margin:0 0 8px;font-size:14px;line-height:1.65;color:var(--ink-soft);max-width:84ch;}
+  .callout p:last-child{margin-bottom:0;}
+  .callout strong{color:var(--ink);}
+
+  .card{background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:22px;box-shadow:var(--shadow);margin-bottom:24px;}
+  .card h3{font-family:"Sora",sans-serif;font-size:15px;margin:0 0 2px;color:var(--ink);font-weight:700;}
+  .card .sub{font-size:12.5px;color:var(--ink-mute);margin:0 0 18px;}
+  .legend{display:flex;gap:18px;font-size:12px;color:var(--ink-mute);margin-top:10px;flex-wrap:wrap;}
+  .legend .dot{display:inline-block;width:9px;height:9px;border-radius:2px;margin-right:6px;vertical-align:middle;}
+
+  .controls{display:flex;gap:10px;align-items:center;margin-bottom:14px;flex-wrap:wrap;}
+  .search{flex:1;min-width:190px;position:relative;}
+  .search input{width:100%;padding:10px 14px 10px 34px;border-radius:10px;border:1px solid var(--line);background:var(--surface-2);color:var(--ink);font-family:inherit;font-size:13.5px;}
+  .search input:focus{outline:2px solid var(--brand-light);outline-offset:-1px;}
+  .search::before{content:"";position:absolute;left:12px;top:50%;transform:translateY(-50%);width:13px;height:13px;border:2px solid var(--ink-mute);border-radius:50%;}
+  .search::after{content:"";position:absolute;left:20px;top:63%;width:6px;height:2px;background:var(--ink-mute);transform:rotate(45deg);}
+
+  .segmented{display:inline-flex;background:var(--neutral-soft);border:1px solid var(--line);border-radius:10px;padding:3px;gap:2px;}
+  .segmented button{border:none;background:transparent;padding:6px 12px;font-size:12px;font-weight:600;border-radius:7px;cursor:pointer;color:var(--ink-mute);font-family:inherit;white-space:nowrap;}
+  .segmented button.active{background:var(--surface);color:var(--ink);box-shadow:0 1px 3px rgba(10,27,51,0.12);}
+
+  .filter-label{font-size:11.5px;color:var(--ink-mute);font-weight:600;text-transform:uppercase;letter-spacing:0.04em;margin-right:1px;}
+  .count-pill{font-size:12px;color:var(--ink-mute);white-space:nowrap;margin-left:auto;}
+
+  .table-scroll{overflow-x:auto;border:1px solid var(--line);border-radius:14px;background:var(--surface);box-shadow:var(--shadow);}
+  table{border-collapse:collapse;width:100%;min-width:900px;font-size:13.5px;}
+  thead th{position:sticky;top:0;background:var(--brand-dark);color:#fff;z-index:2;text-align:left;padding:11px 13px;font-weight:600;font-size:11px;text-transform:uppercase;letter-spacing:0.04em;cursor:pointer;white-space:nowrap;}
+  thead th.num{text-align:right;}
+  thead th .arrow{opacity:0.5;font-size:10px;margin-left:4px;}
+  thead th.sorted .arrow{opacity:1;color:var(--accent);}
+  tbody tr{border-top:1px solid var(--line);}
+  tbody tr:hover{background:var(--surface-2);}
+  tbody td{padding:9px 13px;vertical-align:middle;color:var(--ink-soft);}
+  td.name{color:var(--ink);font-weight:600;white-space:nowrap;}
+  td.proj{color:var(--ink);white-space:nowrap;}
+  td.cargo{color:var(--ink-mute);font-size:12.5px;white-space:nowrap;}
+  td.num{text-align:right;font-family:"IBM Plex Mono",ui-monospace,monospace;font-variant-numeric:tabular-nums;font-size:12.6px;color:var(--ink-soft);}
+  .muted{color:var(--ink-mute);opacity:0.55;}
+
+  .tag-pill{display:inline-flex;align-items:center;padding:2px 8px;border-radius:6px;font-size:11px;font-weight:700;background:var(--neutral-soft);color:var(--ink-mute);}
+  .tag-unidade{display:inline-flex;align-items:center;padding:2px 8px;border-radius:6px;font-size:11px;font-weight:600;background:var(--down-soft);color:var(--down);}
+
+  .spark{display:flex;align-items:flex-end;gap:2px;height:26px;width:88px;}
+  .spark i{display:block;flex:1;border-radius:1.5px 1.5px 0 0;background:var(--neutral-soft);min-height:2px;}
+  .spark i.pre{background:var(--brand-light);}
+  .spark i.post{background:var(--accent);}
+  .spark i.na{background:var(--neutral-soft);}
+
+  .badge{display:inline-flex;align-items:center;gap:4px;padding:3px 9px;border-radius:999px;font-size:12px;font-weight:700;font-variant-numeric:tabular-nums;}
+  .badge.up{background:var(--accent-soft);color:var(--accent);}
+  .badge.down{background:var(--down-soft);color:var(--down);}
+  .badge.flat{background:var(--neutral-soft);color:var(--ink-mute);}
+
+  .footnote{margin-top:8px;font-size:12.5px;color:var(--ink-mute);line-height:1.7;}
+  .footnote code{background:var(--neutral-soft);padding:1px 5px;border-radius:4px;font-size:11.5px;}
+
+  @media (max-width:900px){
+    .kpis, .kpis.k5{grid-template-columns:repeat(2,1fr);}
+    .topbar-head{flex-direction:column;align-items:flex-start;}
+    .tabbar{overflow-x:auto;}
+  }
+</style>
+
+<div class="topbar">
+  <div class="topbar-inner">
+    <div class="topbar-head">
+      <div>
+        <div class="brandmark"><div class="glyph">&gt;</div><div class="word">pwr <b>GESTÃO</b></div></div>
+        <h1>Otimização de horas com IA — painel completo</h1>
+        <p>Dez/2025 a Jul/2026 · marco de adoção de IA em Abril/2026 · 3 recortes navegáveis abaixo.</p>
+      </div>
+      <div class="period-pill">Sem IA: <b>Dez–Mar</b> &nbsp;·&nbsp; Com IA: <b>Abr–Jul</b></div>
+    </div>
+    <div class="tabbar">
+      <button class="tabbtn active" data-tab="geral">Geral e Consultor</button>
+      <button class="tabbtn" data-tab="cxp">Projetos x Consultor</button>
+      <button class="tabbtn" data-tab="proj">Projetos</button>
+    </div>
+  </div>
+</div>
+
+<div class="wrap">
+
+  <!-- ============ PAINEL 1: GERAL E CONSULTOR ============ -->
+  <section class="panel active" id="panel-geral">
+
+    <div class="kpis">
+      <div class="kpi warn">
+        <div class="label">Total de horas / mês (empresa)</div>
+        <div class="value">+42,0<span class="unit">%</span></div>
+        <div class="note">9.859h (Dez–Mar) → 14.004h (Abr–Jul), média mensal agregada.</div>
+      </div>
+      <div class="kpi warn">
+        <div class="label">Consultores lançando horas</div>
+        <div class="value">52 → 88</div>
+        <div class="note">Cresceu 69% no período — motor do número acima.</div>
+      </div>
+      <div class="kpi">
+        <div class="label">Por pessoa (42 ativos, 8 meses)</div>
+        <div class="value">+7,0<span class="unit">%</span></div>
+        <div class="note">170,6h → 182,6h/mês, mesma base o período todo.</div>
+      </div>
+      <div class="kpi">
+        <div class="label">Ocupação média (mesma base)</div>
+        <div class="value">-1,3<span class="unit">p.p.</span></div>
+        <div class="note">106,9% → 105,6% — leve queda, não alta.</div>
+      </div>
+    </div>
+
+    <div class="callout">
+      <div class="tag">Leitura crítica</div>
+      <h2>O ganho agregado é sobretudo headcount, não produtividade por pessoa</h2>
+      <p>O total de horas debitadas cresceu <strong>42,0%</strong> de Dez–Mar para Abr–Jul, mas o número de
+      consultores lançando horas no mês <strong>também</strong> subiu de 52 para 88 — crescimento de equipe de 69%
+      no mesmo período. Isolando só quem esteve presente nos 8 meses e está ativo hoje (42 pessoas — 3 removidas por
+      não constarem mais na aba Usuários, provável desligamento), o ganho real por consultor foi de <strong>apenas
+      7,0%</strong>, com ocupação média caindo levemente. Não é um movimento uniforme: 31 subiram, 10 caíram, 1
+      estável.</p>
+      <p>Esta base não registra quem de fato usa IA no dia a dia, então mesmo o +7,0% não pode ser atribuído à IA
+      com confiança. Trate o +42,0% agregado como não representativo de ganho de IA, e o +7,0% controlado como teto
+      superior otimista.</p>
+    </div>
+
+    <div class="card">
+      <h3>Resumo por consultor</h3>
+      <p class="sub">Ativos o período inteiro (débito nos 8 meses), cargo elegível a débito (fora Sênior,
+      Coordenador, Supervisor, Sócio) e ainda ativos hoje (constam na aba Usuários). Cargo vem da aba Usuários.</p>
+
+      <div class="controls">
+        <div class="search"><input id="search-geral" type="text" placeholder="Buscar consultor ou cargo…"></div>
+        <span class="count-pill" id="count-geral"></span>
+      </div>
+
+      <div class="table-scroll">
+        <table id="tbl-geral">
+          <thead>
+            <tr>
+              <th data-k="nome">Consultor <span class="arrow">↕</span></th>
+              <th data-k="cargo">Cargo <span class="arrow">↕</span></th>
+              <th>Dez → Jul (horas)</th>
+              <th class="num" data-k="ms">Média Sem IA <span class="arrow">↕</span></th>
+              <th class="num" data-k="mc">Média Com IA <span class="arrow">↕</span></th>
+              <th class="num" data-k="vp">Variação <span class="arrow">↕</span></th>
+            </tr>
+          </thead>
+          <tbody id="tbody-geral"></tbody>
+        </table>
+      </div>
+    </div>
+
+    <p class="footnote">
+      Fonte: <code>Indicadores por Colaborador - FINAL.xlsx</code> — abas Alocações, Débito e Usuários.
+      Leitura correlacional, não causal.
+    </p>
+  </section>
+
+  <!-- ============ PAINEL 2: PROJETOS X CONSULTOR ============ -->
+  <section class="panel" id="panel-cxp">
+
+    <div class="kpis k5">
+      <div class="kpi">
+        <div class="label">Pares ativos o período todo</div>
+        <div class="value" id="kpiT-cxp">133</div>
+        <div class="note">Consultor+projeto com débito nos 8 meses, projeto Ativo (SPWR) e consultor ativo hoje.</div>
+      </div>
+      <div class="kpi down">
+        <div class="label">Em queda</div>
+        <div class="value" id="kpiQ-cxp">36</div>
+        <div class="note">≤ -10% e ≤ -3h/mês.</div>
+      </div>
+      <div class="kpi up">
+        <div class="label">Mantido/alta</div>
+        <div class="value" id="kpiA-cxp">97</div>
+        <div class="note">Estável ou ≥ +10% e ≥ +3h/mês.</div>
+      </div>
+      <div class="kpi">
+        <div class="label">Consultores distintos</div>
+        <div class="value" id="kpiC-cxp">30</div>
+        <div class="note">Neste recorte filtrado.</div>
+      </div>
+      <div class="kpi">
+        <div class="label">Projetos distintos</div>
+        <div class="value" id="kpiP-cxp">98</div>
+        <div class="note">Neste recorte filtrado.</div>
+      </div>
+    </div>
+
+    <div class="callout">
+      <div class="tag">Leitura</div>
+      <h2>Na ponta consultor×projeto, queda e alta ficam parecidas em tamanho</h2>
+      <p>Removendo projetos que a base de débito ainda mostrava rodando mas que já estão Inativos/Stand By no
+      contrato SPWR (ex.: Cavicon), e olhando por combinação específica (uma pessoa, um projeto): o quadro
+      fica bem mais equilibrado do que a leitura agregada por projeto sugeria — sinal de que dentro do mesmo
+      projeto, consultores diferentes seguem trajetórias opostas que se cancelam quando tudo é somado junto.</p>
+      <p>Pré-filtrado sem projetos internos (PWR, ACG etc.) — use "Projeto interno" pra incluir de volta.</p>
+    </div>
+
+    <div class="card">
+      <h3>Horas totais debitadas por mês, neste recorte</h3>
+      <p class="sub" id="chartSub-cxp">Soma mensal dos pares filtrados abaixo.</p>
+      <div id="chart-cxp"></div>
+      <div class="legend">
+        <span><i class="dot" style="background:var(--brand-light)"></i>Sem IA (Dez–Mar)</span>
+        <span><i class="dot" style="background:var(--accent)"></i>Com IA (Abr–Jul)</span>
+      </div>
+    </div>
+
+    <div class="card">
+      <h3>Resumo por Consultor × Projeto</h3>
+      <p class="sub">Só pares com débito em todos os 8 meses, projeto com Status = Ativo na base SPWR, e consultor
+      ativo hoje. Unidade e Interno vêm da base de Contratos (Bases SPWR).</p>
+
+      <div class="controls">
+        <div class="search"><input id="search-cxp" type="text" placeholder="Buscar consultor ou projeto…"></div>
+        <span class="filter-label">Interno</span>
+        <div class="segmented" id="filtroInterno-cxp">
+          <button data-v="nao" class="active">Não</button>
+          <button data-v="sim">Sim</button>
+          <button data-v="todos">Todos</button>
+        </div>
+        <span class="filter-label">Unidade</span>
+        <div class="segmented" id="filtroUnidade-cxp">
+          <button data-v="todos" class="active">Todas</button>
+          <button data-v="Fortaleza">Fortaleza</button>
+          <button data-v="ACG">ACG</button>
+          <button data-v="São Paulo">SP</button>
+        </div>
+        <span class="filter-label">Tendência</span>
+        <div class="segmented" id="filtroTend-cxp">
+          <button data-v="todos" class="active">Todos</button>
+          <button data-v="queda">Queda</button>
+          <button data-v="estavel">Estável</button>
+          <button data-v="alta">Alta</button>
+        </div>
+        <span class="count-pill" id="countPill-cxp"></span>
+      </div>
+
+      <div class="table-scroll">
+        <table id="tbl-cxp">
+          <thead>
+            <tr>
+              <th data-k="cons">Consultor <span class="arrow">↕</span></th>
+              <th data-k="proj">Projeto <span class="arrow">↕</span></th>
+              <th data-k="cargo">Cargo <span class="arrow">↕</span></th>
+              <th data-k="unidade">Unidade <span class="arrow">↕</span></th>
+              <th data-k="interno">Interno <span class="arrow">↕</span></th>
+              <th>Dez → Jul (horas)</th>
+              <th class="num" data-k="ms">Média Sem IA <span class="arrow">↕</span></th>
+              <th class="num" data-k="mc">Média Com IA <span class="arrow">↕</span></th>
+              <th class="num" data-k="vp">Variação <span class="arrow">↕</span></th>
+            </tr>
+          </thead>
+          <tbody id="tbody-cxp"></tbody>
+        </table>
+      </div>
+    </div>
+
+    <p class="footnote">
+      Fonte: <code>Débito</code> (horas) cruzada com <code>Contratos.xlsx</code> em Bases SPWR (Status do Projeto,
+      Unidade, Interno) e <code>Usuários</code> (Cargo, ativos). Tendência: Queda ≤ -10%/-3h · Alta ≥ +10%/+3h ·
+      Estável = resto. Leitura correlacional, não causal.
+    </p>
+  </section>
+
+  <!-- ============ PAINEL 3: PROJETOS ============ -->
+  <section class="panel" id="panel-proj">
+
+    <div class="kpis">
+      <div class="kpi">
+        <div class="label">Projetos ativos o período todo</div>
+        <div class="value" id="kpiT-proj">119</div>
+        <div class="note">Débito nos 8 meses + Status = Ativo na base SPWR.</div>
+      </div>
+      <div class="kpi down">
+        <div class="label">Em queda</div>
+        <div class="value" id="kpiQ-proj">19</div>
+        <div class="note">≤ -10% e ≤ -3h/mês.</div>
+      </div>
+      <div class="kpi up">
+        <div class="label">Mantido/alta</div>
+        <div class="value" id="kpiA-proj">100</div>
+        <div class="note">Estável ou ≥ +10% e ≥ +3h/mês.</div>
+      </div>
+      <div class="kpi">
+        <div class="label">Variação do total mensal</div>
+        <div class="value" id="kpiV-proj">+36,3<span class="unit">%</span></div>
+        <div class="note">Soma de todos os projetos deste recorte, Sem IA → Com IA.</div>
+      </div>
+    </div>
+
+    <div class="callout">
+      <div class="tag">Leitura</div>
+      <h2>Depois de tirar projetos já inativos no contrato, a alta domina — mas concentrada</h2>
+      <p>Cruzando só com a base de Contratos em <strong>Bases SPWR</strong> (fonte oficial de status), 19 dos 148
+      projetos que a base de débito mostrava ativos já estavam <strong>Inativos ou Stand By</strong> no contrato —
+      entre eles <strong>Cavicon - Gestão</strong>, que antes aparecia como maior queda: era um projeto sendo
+      encerrado, não perda de produtividade. (Correção: <strong>Austin</strong> tinha entrado nessa lista por um bug
+      de deduplicação — a base tem 3 linhas pra Austin, uma Ativa e duas Inativas de contratos antigos, e a
+      extração original ficou com a última linha em vez de priorizar a Ativa. Corrigido — Austin está de volta como
+      Ativo.) Removidos os 19 realmente inativos, o total mensal (só externos) subiu <strong>+36,3%</strong> de
+      Dez-Mar pra Abr-Jul, com <strong>78 projetos em alta</strong> contra <strong>19 em queda</strong>.</p>
+      <p>Pré-filtrado sem projetos internos — use "Projeto interno" pra incluir de volta. Coluna Unidade mostra
+      Fortaleza/ACG/São Paulo (fonte: Contratos, Bases SPWR).</p>
+    </div>
+
+    <div class="card">
+      <h3>Horas totais debitadas por mês, neste recorte de projetos</h3>
+      <p class="sub" id="chartSub-proj">Soma mensal dos projetos filtrados abaixo.</p>
+      <div id="chart-proj"></div>
+      <div class="legend">
+        <span><i class="dot" style="background:var(--brand-light)"></i>Sem IA (Dez–Mar)</span>
+        <span><i class="dot" style="background:var(--accent)"></i>Com IA (Abr–Jul)</span>
+      </div>
+    </div>
+
+    <div class="card">
+      <h3>Resumo por projeto</h3>
+      <p class="sub">Só projetos com débito em todos os 8 meses <strong>e</strong> Status = Ativo na base de
+      Contratos (Bases SPWR) — remove projetos já encerrados/parados no contrato. Unidade e Interno vêm da mesma
+      base.</p>
+
+      <div class="controls">
+        <div class="search"><input id="search-proj" type="text" placeholder="Buscar projeto…"></div>
+        <span class="filter-label">Interno</span>
+        <div class="segmented" id="filtroInterno-proj">
+          <button data-v="nao" class="active">Não</button>
+          <button data-v="sim">Sim</button>
+          <button data-v="todos">Todos</button>
+        </div>
+        <span class="filter-label">Unidade</span>
+        <div class="segmented" id="filtroUnidade-proj">
+          <button data-v="todos" class="active">Todas</button>
+          <button data-v="Fortaleza">Fortaleza</button>
+          <button data-v="ACG">ACG</button>
+          <button data-v="São Paulo">SP</button>
+        </div>
+        <span class="filter-label">Tendência</span>
+        <div class="segmented" id="filtroTend-proj">
+          <button data-v="todos" class="active">Todos</button>
+          <button data-v="queda">Queda</button>
+          <button data-v="estavel">Estável</button>
+          <button data-v="alta">Alta</button>
+        </div>
+        <span class="count-pill" id="countPill-proj"></span>
+      </div>
+
+      <div class="table-scroll">
+        <table id="tbl-proj">
+          <thead>
+            <tr>
+              <th data-k="nome">Projeto <span class="arrow">↕</span></th>
+              <th data-k="unidade">Unidade <span class="arrow">↕</span></th>
+              <th data-k="interno">Interno <span class="arrow">↕</span></th>
+              <th>Dez → Jul (horas)</th>
+              <th class="num" data-k="ms">Média Sem IA <span class="arrow">↕</span></th>
+              <th class="num" data-k="mc">Média Com IA <span class="arrow">↕</span></th>
+              <th class="num" data-k="vp">Variação <span class="arrow">↕</span></th>
+            </tr>
+          </thead>
+          <tbody id="tbody-proj"></tbody>
+        </table>
+      </div>
+    </div>
+
+    <p class="footnote">
+      Fonte: <code>Débito</code> (horas, somadas por projeto/mês) cruzada com <code>Contratos.xlsx</code> em Bases
+      SPWR (G:/.../2. Dir. OP/1 - Atualização Periódica/Bases SPWR/Contratos.xlsx) — Status do Projeto, Unidade de
+      Negócio, Projeto Interno. Match por nome: 100% dos 450 projetos com débito no período. Leitura correlacional,
+      não causal — arquivo completo (com todas as bases brutas) enviado no chat.
+    </p>
+  </section>
+
+</div>
+
+<script>
+const DATA_GERAL = [{"nome": "Ana Letícia", "cargo": "Consultor I R4", "h": [159.8, 187.1, 168.0, 200.5, 187.7, 189.6, 121.0, 131.6], "o": [115.0, 115.0, 101.0, 90.0, 94.0, 89.0, 89.0, 89.0], "ms": 178.9, "mc": 157.5, "va": -21.4, "vp": -12.0, "completo": true}, {"nome": "Beatriz Alves", "cargo": "Pleno II", "h": [161.8, 157.0, 178.7, 221.0, 168.5, 161.5, 169.0, 185.8], "o": [115.0, 115.0, 135.0, 125.0, 125.0, 118.0, 118.0, 118.0], "ms": 179.6, "mc": 171.2, "va": -8.4, "vp": -4.7, "completo": true}, {"nome": "Beatriz Gomes", "cargo": "Consultor II R4", "h": [182.0, 196.0, 144.0, 172.5, 216.0, 197.0, 190.5, 123.0], "o": [125.0, 125.0, 125.0, 121.0, 118.0, 118.0, 118.0, 125.0], "ms": 173.6, "mc": 181.6, "va": 8.0, "vp": 4.6, "completo": true}, {"nome": "Caio Breno", "cargo": "Consultor II R4", "h": [165.9, 206.2, 180.2, 207.0, 163.2, 207.8, 188.2, 193.0], "o": [118.0, 118.0, 125.0, 127.0, 127.0, 127.0, 127.0, 127.0], "ms": 189.8, "mc": 188.1, "va": -1.7, "vp": -0.9, "completo": true}, {"nome": "Cleiton Farias", "cargo": "ASSISTENTE III", "h": [172.0, 192.6, 167.3, 202.1, 198.6, 213.4, 232.5, 246.5], "o": [102.0, 102.0, 102.0, 102.0, 102.0, null, 102.0, 102.0], "ms": 183.5, "mc": 222.8, "va": 39.3, "vp": 21.4, "completo": true}, {"nome": "Daiane Lima", "cargo": "ANALISTA II", "h": [150.0, 191.5, 177.1, 181.5, 190.0, 177.5, 121.0, 197.5], "o": [101.0, 101.0, 101.0, 101.0, 101.0, null, 101.0, 101.0], "ms": 175.0, "mc": 171.5, "va": -3.5, "vp": -2.0, "completo": true}, {"nome": "Danilo Castelo", "cargo": "Pleno II", "h": [122.0, 160.1, 116.0, 171.8, 159.6, 167.2, 168.5, 187.0], "o": [113.0, 113.0, 94.0, 85.0, 87.0, 107.0, 107.0, 97.0], "ms": 142.5, "mc": 170.6, "va": 28.1, "vp": 19.7, "completo": true}, {"nome": "Diego Lobo", "cargo": "Pleno I", "h": [120.0, 156.8, 157.3, 200.0, 182.4, 192.8, 190.9, 233.5], "o": [140.0, 140.0, 137.0, 143.0, 143.0, 143.0, 143.0, 142.0], "ms": 158.5, "mc": 199.9, "va": 41.4, "vp": 26.1, "completo": true}, {"nome": "Elicia Moraes", "cargo": "Consultor II R4", "h": [166.4, 199.4, 162.8, 196.9, 198.8, 179.4, 89.9, 158.0], "o": [130.0, 130.0, 130.0, 130.0, 126.0, 124.0, 124.0, 128.0], "ms": 181.4, "mc": 156.5, "va": -24.9, "vp": -13.7, "completo": true}, {"nome": "Felipe Vivona", "cargo": "Consultor II SP", "h": [155.8, 181.0, 164.0, 197.8, 186.8, 203.8, 190.2, 160.2], "o": [117.0, 117.0, 104.0, 122.0, 113.0, 119.0, 119.0, 106.0], "ms": 174.6, "mc": 185.2, "va": 10.6, "vp": 6.1, "completo": true}, {"nome": "Flavia Menezes", "cargo": "Pleno II", "h": [169.0, 157.8, 132.0, 213.0, 172.8, 169.5, 200.0, 179.0], "o": [114.0, 114.0, 113.0, 100, 100, 100, 100, 100], "ms": 168.0, "mc": 180.3, "va": 12.3, "vp": 7.3, "completo": true}, {"nome": "Flávio Lima", "cargo": "ANALISTA II", "h": [186.0, 201.0, 187.9, 185.0, 175.8, 187.8, 189.3, 200.4], "o": [102.0, 102.0, 102.0, 102.0, 102.0, null, 102.0, 102.0], "ms": 190.0, "mc": 188.3, "va": -1.7, "vp": -0.9, "completo": true}, {"nome": "Gabriel Freitas", "cargo": "Desenvolvedor Júnior III", "h": [162.6, 184.6, 158.2, 196.8, 176.2, 188.1, 172.1, 196.7], "o": [107.0, 107.0, 89.0, 91.0, 93.0, 99.0, 76.0, 102.0], "ms": 175.6, "mc": 183.3, "va": 7.7, "vp": 4.4, "completo": true}, {"nome": "Gabriel Militão", "cargo": "Consultor III R4", "h": [168.5, 241.0, 175.8, 231.0, 211.5, 223.8, 191.0, 240.0], "o": [124.0, 124.0, 129.0, 131.0, 118.0, 118.0, 118.0, 102.0], "ms": 204.1, "mc": 216.6, "va": 12.5, "vp": 6.1, "completo": true}, {"nome": "Giovanna Cambui", "cargo": "Consultor II SP R4", "h": [139.0, 193.7, 177.1, 237.1, 101.5, 207.5, 188.8, 221.8], "o": [106.0, 106.0, 131.0, 131.0, 93.0, 111.0, 111.0, 111.0], "ms": 186.7, "mc": 179.9, "va": -6.8, "vp": -3.6, "completo": true}, {"nome": "Guilherme Costa", "cargo": "Consultor III", "h": [164.9, 202.3, 161.8, 165.5, 221.2, 218.5, 177.5, 227.2], "o": [129.0, 129.0, 127.0, 131.0, 109.0, 131.0, 131.0, 128.0], "ms": 173.6, "mc": 211.1, "va": 37.5, "vp": 21.6, "completo": true}, {"nome": "Guilherme Dias", "cargo": "Consultor II", "h": [161.0, 247.0, 179.2, 123.8, 219.2, 223.4, 185.5, 202.0], "o": [127.0, 127.0, 127.0, 127.0, 127.0, 123.0, 123.0, 109.0], "ms": 177.8, "mc": 207.6, "va": 29.8, "vp": 16.8, "completo": true}, {"nome": "Gustavo Lima", "cargo": "Consultor III SP R4", "h": [140.0, 179.8, 139.0, 191.9, 149.9, 188.8, 205.3, 206.5], "o": [111.0, 111.0, 111.0, 111.0, 116.0, 116.0, 116.0, 116.0], "ms": 162.7, "mc": 187.6, "va": 24.9, "vp": 15.3, "completo": true}, {"nome": "Higor Alves", "cargo": "Consultor I SP R4", "h": [122.3, 167.7, 118.3, 218.7, 209.4, 201.3, 202.7, 23.0], "o": [102.0, 102.0, 116.0, 125.0, 116.0, 116.0, 116.0, 116.0], "ms": 156.7, "mc": 159.1, "va": 2.4, "vp": 1.5, "completo": true}, {"nome": "Jamile Borges", "cargo": "Consultor I", "h": [172.7, 212.5, 181.8, 208.0, 201.0, 191.5, 194.2, 220.8], "o": [97.0, 97.0, 97.0, 97.0, 111.0, 111.0, 111.0, 111.0], "ms": 193.7, "mc": 201.9, "va": 8.2, "vp": 4.2, "completo": true}, {"nome": "Jhony Wérmeson", "cargo": "ASSISTENTE III", "h": [155.0, 189.0, 128.0, 194.3, 205.6, 102.5, 179.3, 234.6], "o": [100, 100, 100, 100, 100, null, 100, 100], "ms": 166.6, "mc": 180.5, "va": 13.9, "vp": 8.3, "completo": true}, {"nome": "Joao Araujo", "cargo": "Pleno II R4", "h": [180.1, 203.8, 171.0, 213.2, 224.8, 200.8, 222.5, 209.0], "o": [124.0, 124.0, 125.0, 135.0, 135.0, 135.0, 135.0, 128.0], "ms": 192.0, "mc": 214.2, "va": 22.2, "vp": 11.6, "completo": true}, {"nome": "Juliana Oliveira", "cargo": "ANALISTA I R4", "h": [170.4, 182.3, 157.4, 190.1, 173.1, 193.1, 195.4, 217.0], "o": [102.0, 102.0, 102.0, 102.0, 102.0, null, 102.0, 102.0], "ms": 175.0, "mc": 194.7, "va": 19.7, "vp": 11.3, "completo": true}, {"nome": "Lais Moura", "cargo": "Consultor II", "h": [151.8, 174.1, 161.6, 164.0, 192.8, 198.3, 190.8, 256.9], "o": [95.0, 95.0, 95.0, 95.0, 95.0, 95.0, 95.0, 95.0], "ms": 162.9, "mc": 209.7, "va": 46.8, "vp": 28.7, "completo": true}, {"nome": "Leyla Sobral", "cargo": "SECRETARIA EXECUTIVA", "h": [156.0, 184.0, 144.0, 177.0, 183.0, 174.0, 185.0, 208.0], "o": [93.0, 93.0, 93.0, 93.0, 93.0, null, 93.0, 93.0], "ms": 165.2, "mc": 187.5, "va": 22.3, "vp": 13.5, "completo": true}, {"nome": "Luana Almeida", "cargo": "ANALISTA II", "h": [170.4, 173.9, 128.8, 168.7, 157.1, 160.9, 170.1, 199.6], "o": [100, 100, 100, 100, 100, null, 100, 100], "ms": 160.5, "mc": 171.9, "va": 11.4, "vp": 7.1, "completo": true}, {"nome": "Luis Paulo", "cargo": "ANALISTA II", "h": [152.3, 185.8, 158.8, 192.9, 178.7, 179.3, 178.9, 201.8], "o": [100, 100, 100, 100, 100, null, 100, 100], "ms": 172.5, "mc": 184.7, "va": 12.2, "vp": 7.1, "completo": true}, {"nome": "Manuelle Noronha", "cargo": "Consultor I", "h": [152.4, 182.9, 157.8, 181.0, 173.2, 160.0, 198.5, 199.1], "o": [112.0, 112.0, 100, 97.0, 93.0, 96.0, 96.0, 82.0], "ms": 168.5, "mc": 182.7, "va": 14.2, "vp": 8.4, "completo": true}, {"nome": "Mathaus Cruz", "cargo": "Pleno III", "h": [124.2, 164.4, 148.4, 135.9, 172.4, 184.2, 175.2, 145.5], "o": [86.0, 86.0, 93.0, 93.0, 96.0, 82.0, 82.0, 82.0], "ms": 143.2, "mc": 169.3, "va": 26.1, "vp": 18.2, "completo": true}, {"nome": "Matheus Lima", "cargo": "Desenvolvedor Júnior III", "h": [160.1, 187.0, 156.1, 181.7, 96.5, 180.0, 168.4, 163.5], "o": [107.0, 107.0, 107.0, 91.0, 66.0, 119.0, 97.0, 102.0], "ms": 171.2, "mc": 152.1, "va": -19.1, "vp": -11.2, "completo": true}, {"nome": "Matheus Luiz", "cargo": "Pleno II SP", "h": [147.5, 158.0, 139.5, 206.5, 196.5, 172.5, 190.0, 187.0], "o": [96.0, 96.0, 63.0, 79.0, 113.0, 113.0, 114.0, 100], "ms": 162.9, "mc": 186.5, "va": 23.6, "vp": 14.5, "completo": true}, {"nome": "Maycom Barbosa", "cargo": "Consultor III R4", "h": [136.8, 167.8, 66.8, 185.2, 184.2, 178.1, 183.2, 173.6], "o": [93.0, 93.0, 103.0, 102.0, 93.0, 109.0, 109.0, 102.0], "ms": 139.2, "mc": 179.8, "va": 40.6, "vp": 29.2, "completo": true}, {"nome": "Pedro Medina", "cargo": "Consultor I SP R4", "h": [152.2, 141.2, 167.5, 203.6, 192.2, 182.5, 187.1, 199.5], "o": [113.0, 113.0, 113.0, 113.0, 109.0, 106.0, 104.0, 104.0], "ms": 166.2, "mc": 190.3, "va": 24.1, "vp": 14.5, "completo": true}, {"nome": "Rafael Honorato", "cargo": "Pleno II", "h": [139.0, 145.8, 131.0, 232.8, 238.1, 116.2, 204.8, 185.0], "o": [107.0, 107.0, 130.0, 135.0, 135.0, 124.0, 124.0, 122.0], "ms": 162.1, "mc": 186.0, "va": 23.9, "vp": 14.7, "completo": true}, {"nome": "Sandy Lino", "cargo": "ANALISTA III SP", "h": [153.5, 130.0, 158.0, 185.0, 181.5, 175.5, 101.5, 185.0], "o": [102.0, 102.0, 102.0, 102.0, 102.0, null, 102.0, 102.0], "ms": 156.6, "mc": 160.9, "va": 4.3, "vp": 2.7, "completo": true}, {"nome": "Sâmya Aguiar", "cargo": "ANALISTA III", "h": [134.5, 173.5, 119.0, 184.0, 171.5, 184.5, 191.0, 123.0], "o": [100, 100, 100, 100, 100, null, 100, 100], "ms": 152.8, "mc": 167.5, "va": 14.7, "vp": 9.6, "completo": true}, {"nome": "Thalis Rebouças", "cargo": "Analista de BI Pleno I", "h": [161.0, 195.5, 190.5, 217.8, 193.0, 181.7, 169.8, 203.6], "o": [104.0, 104.0, 98.0, 52.0, 59.0, 74.0, 55.0, 102.0], "ms": 191.2, "mc": 187.0, "va": -4.2, "vp": -2.2, "completo": true}, {"nome": "Thiago Crompton", "cargo": "Pleno I SP", "h": [165.0, 117.0, 181.4, 243.8, 198.5, 193.7, 197.0, 139.5], "o": [97.0, 97.0, 109.0, 123.0, 108.0, 118.0, 118.0, 118.0], "ms": 176.8, "mc": 182.2, "va": 5.4, "vp": 3.1, "completo": true}, {"nome": "Tiago Fialho", "cargo": "ANALISTA II R4", "h": [120.8, 183.0, 144.5, 108.0, 130.0, 186.0, 147.5, 209.0], "o": [61.0, 61.0, 61.0, 61.0, 61.0, 61.0, 61.0, 61.0], "ms": 139.1, "mc": 168.1, "va": 29.0, "vp": 20.8, "completo": true}, {"nome": "Vander Rosa", "cargo": "Analista de BI Júnior II", "h": [165.4, 182.7, 149.4, 186.0, 192.7, 192.2, 167.7, 14.1], "o": [116.0, 116.0, 14.0, 43.0, 35.0, 50.0, 60.0, 102.0], "ms": 170.9, "mc": 141.7, "va": -29.2, "vp": -17.1, "completo": true}, {"nome": "Victor Gomes", "cargo": "ASSISTENTE II", "h": [154.0, 196.8, 169.3, 190.5, 177.8, 184.9, 180.8, 199.0], "o": [100, 100, 100, 100, 100, null, 100, 100], "ms": 177.7, "mc": 185.6, "va": 7.9, "vp": 4.4, "completo": true}, {"nome": "Vinicius Correia", "cargo": "Pleno I R4", "h": [168.8, 156.8, 140.8, 204.0, 90.8, 194.7, 164.5, 217.9], "o": [135.0, 135.0, 129.0, 135.0, 142.0, 135.0, 135.0, 133.0], "ms": 167.6, "mc": 166.9, "va": -0.7, "vp": -0.4, "completo": true}];
+const DATA_CXP = [{"cons": "Ana Letícia", "proj": "ACG", "cargo": "Consultor I R4", "unidade": "ACG", "interno": true, "h": [1.0, 5.0, 2.5, 2.5, 5.0, 1.0, 2.0, 2.0], "ms": 2.8, "mc": 2.5, "va": -0.3, "vp": -10.7, "tend": "estavel"}, {"cons": "Ana Letícia", "proj": "CS Distribuidora - ACG", "cargo": "Consultor I R4", "unidade": "ACG", "interno": false, "h": [3.2, 4.2, 4.1, 6.2, 10.2, 6.9, 3.0, 7.2], "ms": 4.5, "mc": 6.8, "va": 2.3, "vp": 51.1, "tend": "estavel"}, {"cons": "Ana Letícia", "proj": "PWR - ACG", "cargo": "Consultor I R4", "unidade": "Fortaleza", "interno": true, "h": [19.8, 28.4, 31.9, 46.4, 49.8, 61.0, 40.2, 49.2], "ms": 31.6, "mc": 50.0, "va": 18.4, "vp": 58.2, "tend": "alta"}, {"cons": "Ana Letícia", "proj": "PWR Gestão", "cargo": "Consultor I R4", "unidade": "Fortaleza", "interno": true, "h": [4.0, 7.4, 4.0, 8.0, 7.0, 6.0, 5.0, 7.2], "ms": 5.8, "mc": 6.3, "va": 0.5, "vp": 8.6, "tend": "estavel"}, {"cons": "Ana Letícia", "proj": "Pastelaria dos Sonhos - Acompanhamento ACG", "cargo": "Consultor I R4", "unidade": "ACG", "interno": false, "h": [4.2, 7.7, 10.6, 12.9, 6.5, 12.6, 14.7, 13.2], "ms": 8.9, "mc": 11.8, "va": 2.9, "vp": 32.6, "tend": "estavel"}, {"cons": "Ana Letícia", "proj": "Seteg - ACG", "cargo": "Consultor I R4", "unidade": "ACG", "interno": false, "h": [5.3, 11.6, 4.7, 10.4, 12.7, 8.2, 5.0, 2.7], "ms": 8.0, "mc": 7.1, "va": -0.9, "vp": -11.3, "tend": "estavel"}, {"cons": "Ana Letícia", "proj": "YOOU Group - Partnership", "cargo": "Consultor I R4", "unidade": "ACG", "interno": false, "h": [13.0, 12.6, 8.0, 12.9, 10.8, 18.2, 15.0, 8.4], "ms": 11.6, "mc": 13.1, "va": 1.5, "vp": 12.9, "tend": "estavel"}, {"cons": "Beatriz Alves", "proj": "PWR Gestão", "cargo": "Pleno II", "unidade": "Fortaleza", "interno": true, "h": [7.0, 6.5, 14.2, 11.0, 9.0, 3.0, 8.0, 3.5], "ms": 9.7, "mc": 5.9, "va": -3.8, "vp": -39.2, "tend": "queda"}, {"cons": "Beatriz Alves", "proj": "Sorveteria Juarez - FORMER", "cargo": "Pleno II", "unidade": "Fortaleza", "interno": false, "h": [9.0, 0.5, 11.5, 10.0, 13.2, 5.5, 13.0, 14.0], "ms": 7.8, "mc": 11.4, "va": 3.6, "vp": 46.2, "tend": "alta"}, {"cons": "Beatriz Alves", "proj": "Tubocone", "cargo": "Pleno II", "unidade": "Fortaleza", "interno": false, "h": [98.8, 97.5, 70.0, 129.0, 89.0, 85.5, 76.0, 85.8], "ms": 98.8, "mc": 84.1, "va": -14.7, "vp": -14.9, "tend": "queda"}, {"cons": "Beatriz Gomes", "proj": "Austin", "cargo": "Consultor II R4", "unidade": "Fortaleza", "interno": false, "h": [45.0, 47.0, 40.0, 53.0, 54.5, 66.0, 57.0, 41.0], "ms": 46.2, "mc": 54.6, "va": 8.4, "vp": 18.2, "tend": "alta"}, {"cons": "Beatriz Gomes", "proj": "Bentô", "cargo": "Consultor II R4", "unidade": "Fortaleza", "interno": false, "h": [5.5, 18.0, 18.0, 15.0, 17.5, 16.5, 5.0, 18.0], "ms": 14.1, "mc": 14.2, "va": 0.1, "vp": 0.7, "tend": "estavel"}, {"cons": "Beatriz Gomes", "proj": "Illa Mare", "cargo": "Consultor II R4", "unidade": "Fortaleza", "interno": false, "h": [18.0, 18.0, 13.0, 8.5, 26.0, 22.0, 32.0, 9.0], "ms": 14.4, "mc": 22.2, "va": 7.8, "vp": 54.2, "tend": "alta"}, {"cons": "Beatriz Gomes", "proj": "Mundo de LED", "cargo": "Consultor II R4", "unidade": "Fortaleza", "interno": false, "h": [17.5, 12.0, 19.5, 28.5, 29.5, 9.0, 22.5, 24.0], "ms": 19.4, "mc": 21.2, "va": 1.8, "vp": 9.3, "tend": "estavel"}, {"cons": "Beatriz Gomes", "proj": "Santa Praia", "cargo": "Consultor II R4", "unidade": "Fortaleza", "interno": false, "h": [7.0, 17.5, 13.5, 19.0, 14.0, 19.5, 12.0, 7.5], "ms": 14.2, "mc": 13.2, "va": -1.0, "vp": -7.0, "tend": "estavel"}, {"cons": "Caio Breno", "proj": "Centro Medico Mauricio Carvalho", "cargo": "Consultor II R4", "unidade": "Fortaleza", "interno": false, "h": [32.3, 23.5, 13.5, 26.2, 22.0, 35.0, 30.2, 29.5], "ms": 23.9, "mc": 29.2, "va": 5.3, "vp": 22.2, "tend": "alta"}, {"cons": "Caio Breno", "proj": "Complexo BM", "cargo": "Consultor II R4", "unidade": "Fortaleza", "interno": false, "h": [31.5, 42.2, 30.8, 32.5, 30.5, 31.0, 23.2, 14.8], "ms": 34.2, "mc": 24.9, "va": -9.3, "vp": -27.2, "tend": "queda"}, {"cons": "Caio Breno", "proj": "PWR Gestão", "cargo": "Consultor II R4", "unidade": "Fortaleza", "interno": true, "h": [1.0, 1.5, 4.0, 3.5, 3.5, 2.0, 2.5, 0.5], "ms": 2.5, "mc": 2.1, "va": -0.4, "vp": -16.0, "tend": "estavel"}, {"cons": "Caio Breno", "proj": "Picanha do Jonas", "cargo": "Consultor II R4", "unidade": "Fortaleza", "interno": false, "h": [17.5, 42.2, 46.5, 52.0, 37.5, 18.2, 26.8, 17.8], "ms": 39.6, "mc": 25.1, "va": -14.5, "vp": -36.6, "tend": "queda"}, {"cons": "Caio Breno", "proj": "Yozenn", "cargo": "Consultor II R4", "unidade": "Fortaleza", "interno": false, "h": [28.3, 31.8, 30.8, 31.8, 11.5, 22.5, 29.8, 24.8], "ms": 30.6, "mc": 22.1, "va": -8.5, "vp": -27.8, "tend": "queda"}, {"cons": "Cleiton Farias", "proj": "PWR Gestão", "cargo": "ASSISTENTE III", "unidade": "Fortaleza", "interno": true, "h": [172.0, 189.0, 166.6, 202.1, 198.6, 213.4, 205.8, 228.1], "ms": 182.4, "mc": 211.5, "va": 29.1, "vp": 16.0, "tend": "alta"}, {"cons": "Danilo Castelo", "proj": "ACG", "cargo": "Pleno II", "unidade": "ACG", "interno": true, "h": [4.5, 19.0, 14.0, 9.0, 26.5, 19.0, 19.5, 6.2], "ms": 11.6, "mc": 17.8, "va": 6.2, "vp": 53.4, "tend": "alta"}, {"cons": "Danilo Castelo", "proj": "CS Distribuidora - ACG", "cargo": "Pleno II", "unidade": "ACG", "interno": false, "h": [1.5, 2.0, 1.8, 4.0, 3.5, 3.2, 2.8, 4.0], "ms": 2.3, "mc": 3.4, "va": 1.1, "vp": 47.8, "tend": "estavel"}, {"cons": "Danilo Castelo", "proj": "Centro Medico Mauricio Carvalho - Acompanhamento ACG", "cargo": "Pleno II", "unidade": "ACG", "interno": false, "h": [7.2, 6.5, 11.8, 7.5, 10.8, 5.5, 6.5, 11.0], "ms": 8.2, "mc": 8.4, "va": 0.2, "vp": 2.4, "tend": "estavel"}, {"cons": "Danilo Castelo", "proj": "Cerus Bank - ACG", "cargo": "Pleno II", "unidade": "ACG", "interno": false, "h": [7.5, 8.0, 2.0, 14.2, 3.2, 9.5, 7.8, 9.0], "ms": 7.9, "mc": 7.4, "va": -0.5, "vp": -6.3, "tend": "estavel"}, {"cons": "Danilo Castelo", "proj": "JW Saraiva - ACG", "cargo": "Pleno II", "unidade": "ACG", "interno": false, "h": [12.5, 15.2, 10.2, 16.2, 7.5, 7.2, 7.2, 10.0], "ms": 13.6, "mc": 8.0, "va": -5.6, "vp": -41.2, "tend": "queda"}, {"cons": "Danilo Castelo", "proj": "Mandala - Recuperação de Créditos", "cargo": "Pleno II", "unidade": "ACG", "interno": false, "h": [3.8, 4.0, 7.0, 7.2, 4.5, 2.8, 3.8, 2.8], "ms": 5.5, "mc": 3.4, "va": -2.1, "vp": -38.2, "tend": "estavel"}, {"cons": "Danilo Castelo", "proj": "Norte Geradores - ACG", "cargo": "Pleno II", "unidade": "ACG", "interno": false, "h": [21.0, 26.5, 12.0, 28.2, 39.8, 32.8, 16.8, 9.8], "ms": 21.9, "mc": 24.8, "va": 2.9, "vp": 13.2, "tend": "estavel"}, {"cons": "Danilo Castelo", "proj": "PWR Gestão", "cargo": "Pleno II", "unidade": "Fortaleza", "interno": true, "h": [8.5, 17.7, 11.0, 27.5, 11.0, 17.5, 18.2, 26.0], "ms": 16.2, "mc": 18.2, "va": 2.0, "vp": 12.3, "tend": "estavel"}, {"cons": "Danilo Castelo", "proj": "Pastelaria dos Sonhos - Acompanhamento ACG", "cargo": "Pleno II", "unidade": "ACG", "interno": false, "h": [1.0, 1.5, 2.5, 6.5, 3.0, 7.5, 10.2, 1.0], "ms": 2.9, "mc": 5.4, "va": 2.5, "vp": 86.2, "tend": "estavel"}, {"cons": "Danilo Castelo", "proj": "Piso Novo - ACG", "cargo": "Pleno II", "unidade": "ACG", "interno": false, "h": [1.5, 1.0, 0.8, 2.2, 3.5, 1.0, 2.5, 8.0], "ms": 1.4, "mc": 3.8, "va": 2.4, "vp": 171.4, "tend": "estavel"}, {"cons": "Danilo Castelo", "proj": "Pronutrir - ACG", "cargo": "Pleno II", "unidade": "ACG", "interno": false, "h": [8.8, 11.5, 7.8, 10.5, 8.8, 14.2, 21.5, 8.0], "ms": 9.6, "mc": 13.1, "va": 3.5, "vp": 36.5, "tend": "alta"}, {"cons": "Danilo Castelo", "proj": "Seteg - ACG", "cargo": "Pleno II", "unidade": "ACG", "interno": false, "h": [10.0, 8.8, 4.2, 11.8, 5.6, 10.0, 12.0, 12.5], "ms": 8.7, "mc": 10.0, "va": 1.3, "vp": 14.9, "tend": "estavel"}, {"cons": "Diego Lobo", "proj": "Anaju", "cargo": "Pleno I", "unidade": "Fortaleza", "interno": false, "h": [16.0, 19.0, 16.5, 14.5, 16.0, 18.0, 18.0, 20.0], "ms": 16.5, "mc": 18.0, "va": 1.5, "vp": 9.1, "tend": "estavel"}, {"cons": "Diego Lobo", "proj": "DoceVille", "cargo": "Pleno I", "unidade": "Fortaleza", "interno": false, "h": [10.0, 4.0, 4.0, 17.0, 4.5, 8.0, 3.0, 5.0], "ms": 8.8, "mc": 5.1, "va": -3.7, "vp": -42.0, "tend": "queda"}, {"cons": "Diego Lobo", "proj": "Grupo Sampaio", "cargo": "Pleno I", "unidade": "Fortaleza", "interno": false, "h": [26.0, 29.0, 26.5, 28.0, 22.0, 25.5, 19.0, 33.0], "ms": 27.4, "mc": 24.9, "va": -2.5, "vp": -9.1, "tend": "estavel"}, {"cons": "Diego Lobo", "proj": "Liebe - Controladoria", "cargo": "Pleno I", "unidade": "Fortaleza", "interno": false, "h": [10.0, 23.0, 25.0, 13.5, 8.0, 21.5, 9.0, 4.5], "ms": 17.9, "mc": 10.8, "va": -7.1, "vp": -39.7, "tend": "queda"}, {"cons": "Diego Lobo", "proj": "O Pimentão - Financeiro", "cargo": "Pleno I", "unidade": "Fortaleza", "interno": false, "h": [4.0, 4.0, 12.5, 25.6, 4.0, 19.0, 20.0, 33.0], "ms": 11.5, "mc": 19.0, "va": 7.5, "vp": 65.2, "tend": "alta"}, {"cons": "Diego Lobo", "proj": "Vignoli", "cargo": "Pleno I", "unidade": "Fortaleza", "interno": false, "h": [28.0, 26.0, 32.0, 27.0, 30.0, 31.5, 17.5, 28.5], "ms": 28.2, "mc": 26.9, "va": -1.3, "vp": -4.6, "tend": "estavel"}, {"cons": "Elicia Moraes", "proj": "Anaju", "cargo": "Consultor II R4", "unidade": "Fortaleza", "interno": false, "h": [12.2, 26.0, 14.8, 19.5, 15.9, 14.6, 7.2, 12.2], "ms": 18.1, "mc": 12.5, "va": -5.6, "vp": -30.9, "tend": "queda"}, {"cons": "Elicia Moraes", "proj": "CCON", "cargo": "Consultor II R4", "unidade": "Fortaleza", "interno": false, "h": [14.7, 25.1, 9.2, 26.2, 21.2, 16.2, 6.5, 21.5], "ms": 18.8, "mc": 16.3, "va": -2.5, "vp": -13.3, "tend": "estavel"}, {"cons": "Elicia Moraes", "proj": "Complexo Mareiro - Operações", "cargo": "Consultor II R4", "unidade": "Fortaleza", "interno": false, "h": [12.5, 20.4, 16.2, 16.1, 14.0, 15.5, 4.0, 7.5], "ms": 16.3, "mc": 10.2, "va": -6.1, "vp": -37.4, "tend": "queda"}, {"cons": "Elicia Moraes", "proj": "DIMAX", "cargo": "Consultor II R4", "unidade": "Fortaleza", "interno": false, "h": [9.8, 31.1, 17.2, 21.3, 8.0, 14.2, 2.0, 15.6], "ms": 19.9, "mc": 10.0, "va": -9.9, "vp": -49.7, "tend": "queda"}, {"cons": "Elicia Moraes", "proj": "DoceVille - Comercial", "cargo": "Consultor II R4", "unidade": "Fortaleza", "interno": false, "h": [18.0, 23.2, 15.6, 33.5, 20.8, 33.0, 11.0, 14.3], "ms": 22.5, "mc": 19.8, "va": -2.7, "vp": -12.0, "tend": "estavel"}, {"cons": "Elicia Moraes", "proj": "PWR Gestão", "cargo": "Consultor II R4", "unidade": "Fortaleza", "interno": true, "h": [1.3, 3.0, 6.1, 5.6, 5.2, 3.3, 3.0, 28.9], "ms": 4.0, "mc": 10.1, "va": 6.1, "vp": 152.5, "tend": "alta"}, {"cons": "Elicia Moraes", "proj": "Vignoli", "cargo": "Consultor II R4", "unidade": "Fortaleza", "interno": false, "h": [28.7, 36.9, 29.0, 31.2, 60.5, 46.9, 37.7, 30.4], "ms": 31.5, "mc": 43.9, "va": 12.4, "vp": 39.4, "tend": "alta"}, {"cons": "Felipe Vivona", "proj": "CAUP - Academia de Vendas", "cargo": "Consultor II SP", "unidade": "São Paulo", "interno": false, "h": [9.0, 19.5, 12.0, 10.5, 6.0, 7.8, 10.5, 16.0], "ms": 12.8, "mc": 10.1, "va": -2.7, "vp": -21.1, "tend": "estavel"}, {"cons": "Felipe Vivona", "proj": "PWR Gestão", "cargo": "Consultor II SP", "unidade": "Fortaleza", "interno": true, "h": [4.0, 4.0, 8.0, 7.0, 6.5, 5.0, 6.0, 3.0], "ms": 5.8, "mc": 5.1, "va": -0.7, "vp": -12.1, "tend": "estavel"}, {"cons": "Flavia Menezes", "proj": "Construtora Coral", "cargo": "Pleno II", "unidade": "Fortaleza", "interno": false, "h": [19.4, 11.6, 30.5, 27.1, 22.2, 40.7, 34.0, 28.9], "ms": 22.1, "mc": 31.5, "va": 9.4, "vp": 42.5, "tend": "alta"}, {"cons": "Flavia Menezes", "proj": "Grupo Urbmidia", "cargo": "Pleno II", "unidade": "Fortaleza", "interno": false, "h": [47.0, 48.0, 55.5, 65.0, 48.0, 46.5, 37.0, 39.5], "ms": 53.9, "mc": 42.8, "va": -11.1, "vp": -20.6, "tend": "queda"}, {"cons": "Flavia Menezes", "proj": "Hospital Veterinário Popular - Gestão", "cargo": "Pleno II", "unidade": "Fortaleza", "interno": false, "h": [18.6, 13.0, 7.0, 25.2, 11.5, 9.0, 9.8, 21.8], "ms": 15.9, "mc": 13.0, "va": -2.9, "vp": -18.2, "tend": "estavel"}, {"cons": "Flavia Menezes", "proj": "JRA Engenharia - Gestão", "cargo": "Pleno II", "unidade": "Fortaleza", "interno": false, "h": [0.2, 7.1, 5.8, 12.7, 11.0, 8.4, 12.6, 7.3], "ms": 6.4, "mc": 9.8, "va": 3.4, "vp": 53.1, "tend": "alta"}, {"cons": "Flavia Menezes", "proj": "Newlight - Gestão", "cargo": "Pleno II", "unidade": "Fortaleza", "interno": false, "h": [35.0, 8.1, 6.0, 14.7, 16.2, 18.7, 31.8, 23.8], "ms": 15.9, "mc": 22.6, "va": 6.7, "vp": 42.1, "tend": "alta"}, {"cons": "Flavia Menezes", "proj": "PWR Gestão", "cargo": "Pleno II", "unidade": "Fortaleza", "interno": true, "h": [2.5, 11.5, 11.0, 12.5, 9.0, 10.5, 3.0, 2.5], "ms": 9.4, "mc": 6.2, "va": -3.2, "vp": -34.0, "tend": "queda"}, {"cons": "Flavia Menezes", "proj": "Pensar Educação", "cargo": "Pleno II", "unidade": "Fortaleza", "interno": false, "h": [23.9, 27.2, 3.8, 23.1, 39.0, 18.9, 47.2, 21.8], "ms": 19.5, "mc": 31.8, "va": 12.3, "vp": 63.1, "tend": "alta"}, {"cons": "Flávio Lima", "proj": "Capital Upgrade - CAUP", "cargo": "ANALISTA II", "unidade": "Fortaleza", "interno": true, "h": [55.9, 62.7, 91.5, 73.0, 60.3, 84.1, 71.2, 54.5], "ms": 70.8, "mc": 67.5, "va": -3.3, "vp": -4.7, "tend": "estavel"}, {"cons": "Flávio Lima", "proj": "PWR Gestão", "cargo": "ANALISTA II", "unidade": "Fortaleza", "interno": true, "h": [130.1, 138.3, 96.4, 112.0, 115.5, 103.7, 118.1, 145.9], "ms": 119.2, "mc": 120.8, "va": 1.6, "vp": 1.3, "tend": "estavel"}, {"cons": "Gabriel Freitas", "proj": "Clínica Evolud - Tech", "cargo": "Desenvolvedor Júnior III", "unidade": "Fortaleza", "interno": false, "h": [59.4, 42.4, 62.8, 111.0, 71.4, 56.2, 28.7, 83.9], "ms": 68.9, "mc": 60.0, "va": -8.9, "vp": -12.9, "tend": "queda"}, {"cons": "Gabriel Militão", "proj": "ACT", "cargo": "Consultor III R4", "unidade": "Fortaleza", "interno": false, "h": [13.5, 10.5, 9.0, 18.0, 16.5, 13.5, 10.5, 13.0], "ms": 12.8, "mc": 13.4, "va": 0.6, "vp": 4.7, "tend": "estavel"}, {"cons": "Gabriel Militão", "proj": "Austin", "cargo": "Consultor III R4", "unidade": "Fortaleza", "interno": false, "h": [48.5, 36.0, 44.0, 50.0, 37.5, 18.5, 24.5, 19.0], "ms": 44.6, "mc": 24.9, "va": -19.7, "vp": -44.2, "tend": "queda"}, {"cons": "Gabriel Militão", "proj": "Clínica Santa Rafaela", "cargo": "Consultor III R4", "unidade": "Fortaleza", "interno": false, "h": [19.0, 49.5, 10.0, 24.0, 18.5, 51.0, 20.0, 14.0], "ms": 25.6, "mc": 25.9, "va": 0.3, "vp": 1.2, "tend": "estavel"}, {"cons": "Gabriel Militão", "proj": "One Play - Gestão", "cargo": "Consultor III R4", "unidade": "Fortaleza", "interno": false, "h": [5.0, 10.0, 15.0, 23.0, 20.0, 14.0, 16.0, 19.0], "ms": 13.2, "mc": 17.2, "va": 4.0, "vp": 30.3, "tend": "alta"}, {"cons": "Gabriel Militão", "proj": "San Paolo", "cargo": "Consultor III R4", "unidade": "Fortaleza", "interno": false, "h": [7.0, 47.5, 19.0, 12.0, 14.0, 13.6, 17.0, 22.5], "ms": 21.4, "mc": 16.8, "va": -4.6, "vp": -21.5, "tend": "queda"}, {"cons": "Gabriel Militão", "proj": "VM Empreendimentos", "cargo": "Consultor III R4", "unidade": "Fortaleza", "interno": false, "h": [8.5, 3.5, 9.0, 38.0, 18.0, 42.5, 17.5, 47.0], "ms": 14.8, "mc": 31.2, "va": 16.4, "vp": 110.8, "tend": "alta"}, {"cons": "Giovanna Cambui", "proj": "Antocon", "cargo": "Consultor II SP R4", "unidade": "São Paulo", "interno": false, "h": [49.5, 38.4, 34.5, 32.1, 9.5, 21.5, 32.0, 28.5], "ms": 38.6, "mc": 22.9, "va": -15.7, "vp": -40.7, "tend": "queda"}, {"cons": "Giovanna Cambui", "proj": "Coldtérmica", "cargo": "Consultor II SP R4", "unidade": "São Paulo", "interno": false, "h": [31.0, 42.9, 17.6, 30.8, 23.0, 33.0, 25.8, 35.0], "ms": 30.6, "mc": 29.2, "va": -1.4, "vp": -4.6, "tend": "estavel"}, {"cons": "Giovanna Cambui", "proj": "Deltamed", "cargo": "Consultor II SP R4", "unidade": "São Paulo", "interno": false, "h": [24.2, 26.1, 30.0, 21.6, 7.5, 19.0, 17.5, 3.0], "ms": 25.5, "mc": 11.8, "va": -13.7, "vp": -53.7, "tend": "queda"}, {"cons": "Giovanna Cambui", "proj": "Mandala - Gestão", "cargo": "Consultor II SP R4", "unidade": "São Paulo", "interno": false, "h": [10.0, 27.4, 15.0, 29.2, 6.5, 18.5, 19.5, 38.0], "ms": 20.4, "mc": 20.6, "va": 0.2, "vp": 1.0, "tend": "estavel"}, {"cons": "Giovanna Cambui", "proj": "PWR Gestão", "cargo": "Consultor II SP R4", "unidade": "Fortaleza", "interno": true, "h": [1.0, 2.0, 8.0, 2.5, 3.0, 3.5, 1.2, 2.0], "ms": 3.4, "mc": 2.4, "va": -1.0, "vp": -29.4, "tend": "estavel"}, {"cons": "Guilherme Costa", "proj": "3G Engenharia", "cargo": "Consultor III", "unidade": "Fortaleza", "interno": false, "h": [14.3, 20.0, 9.2, 20.8, 19.0, 18.0, 13.5, 19.5], "ms": 16.1, "mc": 17.5, "va": 1.4, "vp": 8.7, "tend": "estavel"}, {"cons": "Guilherme Costa", "proj": "Fiducial Imobiliária", "cargo": "Consultor III", "unidade": "Fortaleza", "interno": false, "h": [18.3, 20.8, 11.5, 17.2, 26.5, 18.5, 12.8, 18.8], "ms": 16.9, "mc": 19.1, "va": 2.2, "vp": 13.0, "tend": "estavel"}, {"cons": "Guilherme Costa", "proj": "Giga Mall", "cargo": "Consultor III", "unidade": "Fortaleza", "interno": false, "h": [5.5, 14.0, 7.5, 13.5, 7.8, 10.0, 7.0, 14.0], "ms": 10.1, "mc": 9.7, "va": -0.4, "vp": -4.0, "tend": "estavel"}, {"cons": "Guilherme Costa", "proj": "PWR Gestão", "cargo": "Consultor III", "unidade": "Fortaleza", "interno": true, "h": [1.8, 5.6, 5.8, 3.8, 19.0, 5.0, 6.5, 4.0], "ms": 4.2, "mc": 8.6, "va": 4.4, "vp": 104.8, "tend": "alta"}, {"cons": "Guilherme Dias", "proj": "Clínica Evolud", "cargo": "Consultor II", "unidade": "Fortaleza", "interno": false, "h": [17.0, 20.5, 25.0, 10.0, 18.0, 14.0, 29.0, 26.8], "ms": 18.1, "mc": 21.9, "va": 3.8, "vp": 21.0, "tend": "alta"}, {"cons": "Guilherme Dias", "proj": "Construnova", "cargo": "Consultor II", "unidade": "Fortaleza", "interno": false, "h": [19.2, 60.8, 12.2, 45.2, 49.5, 54.2, 11.5, 28.2], "ms": 34.4, "mc": 35.9, "va": 1.5, "vp": 4.4, "tend": "estavel"}, {"cons": "Guilherme Dias", "proj": "DoceVille", "cargo": "Consultor II", "unidade": "Fortaleza", "interno": false, "h": [18.5, 20.5, 28.0, 13.0, 17.2, 26.2, 28.5, 34.0], "ms": 20.0, "mc": 26.5, "va": 6.5, "vp": 32.5, "tend": "alta"}, {"cons": "Guilherme Dias", "proj": "Iselétrica", "cargo": "Consultor II", "unidade": "Fortaleza", "interno": false, "h": [15.0, 24.5, 23.0, 1.0, 10.5, 8.5, 20.5, 21.0], "ms": 15.9, "mc": 15.1, "va": -0.8, "vp": -5.0, "tend": "estavel"}, {"cons": "Guilherme Dias", "proj": "Lotérica Aldeota", "cargo": "Consultor II", "unidade": "Fortaleza", "interno": false, "h": [12.0, 17.0, 12.8, 2.5, 12.2, 20.8, 21.2, 24.5], "ms": 11.1, "mc": 19.7, "va": 8.6, "vp": 77.5, "tend": "alta"}, {"cons": "Guilherme Dias", "proj": "PWR Gestão", "cargo": "Consultor II", "unidade": "Fortaleza", "interno": true, "h": [5.0, 10.0, 8.5, 4.5, 8.0, 5.0, 6.5, 5.5], "ms": 7.0, "mc": 6.2, "va": -0.8, "vp": -11.4, "tend": "estavel"}, {"cons": "Guilherme Dias", "proj": "São Camilo", "cargo": "Consultor II", "unidade": "Fortaleza", "interno": false, "h": [12.5, 17.0, 16.0, 13.5, 22.5, 19.5, 22.0, 26.5], "ms": 14.8, "mc": 22.6, "va": 7.8, "vp": 52.7, "tend": "alta"}, {"cons": "Gustavo Lima", "proj": "Antocon", "cargo": "Consultor III SP R4", "unidade": "São Paulo", "interno": false, "h": [24.5, 19.0, 19.0, 26.5, 16.0, 20.5, 24.0, 22.0], "ms": 22.2, "mc": 20.6, "va": -1.6, "vp": -7.2, "tend": "estavel"}, {"cons": "Gustavo Lima", "proj": "Artfix", "cargo": "Consultor III SP R4", "unidade": "São Paulo", "interno": false, "h": [9.0, 16.8, 3.0, 12.0, 12.5, 3.0, 14.5, 6.0], "ms": 10.2, "mc": 9.0, "va": -1.2, "vp": -11.8, "tend": "estavel"}, {"cons": "Gustavo Lima", "proj": "AtraSorb, AvantCare e Titán Portas", "cargo": "Consultor III SP R4", "unidade": "São Paulo", "interno": false, "h": [10.0, 34.0, 15.5, 14.0, 20.0, 27.0, 33.3, 33.0], "ms": 18.4, "mc": 28.3, "va": 9.9, "vp": 53.8, "tend": "alta"}, {"cons": "Gustavo Lima", "proj": "Coldtérmica", "cargo": "Consultor III SP R4", "unidade": "São Paulo", "interno": false, "h": [23.0, 18.5, 8.0, 19.5, 20.0, 21.0, 18.0, 31.5], "ms": 17.2, "mc": 22.6, "va": 5.4, "vp": 31.4, "tend": "alta"}, {"cons": "Gustavo Lima", "proj": "Deccó", "cargo": "Consultor III SP R4", "unidade": "São Paulo", "interno": false, "h": [7.0, 11.0, 22.0, 22.5, 19.0, 20.5, 16.5, 24.5], "ms": 15.6, "mc": 20.1, "va": 4.5, "vp": 28.8, "tend": "alta"}, {"cons": "Gustavo Lima", "proj": "Eletric Minas", "cargo": "Consultor III SP R4", "unidade": "São Paulo", "interno": false, "h": [10.0, 11.5, 8.5, 35.6, 4.0, 27.5, 16.0, 19.5], "ms": 16.4, "mc": 16.8, "va": 0.4, "vp": 2.4, "tend": "estavel"}, {"cons": "Gustavo Lima", "proj": "JMG", "cargo": "Consultor III SP R4", "unidade": "São Paulo", "interno": false, "h": [40.0, 39.0, 29.0, 30.8, 25.3, 29.8, 31.5, 37.5], "ms": 34.7, "mc": 31.0, "va": -3.7, "vp": -10.7, "tend": "queda"}, {"cons": "Gustavo Lima", "proj": "R. Invest - Financeiro", "cargo": "Consultor III SP R4", "unidade": "São Paulo", "interno": false, "h": [9.5, 7.0, 6.0, 8.5, 24.6, 12.5, 16.5, 8.0], "ms": 7.8, "mc": 15.4, "va": 7.6, "vp": 97.4, "tend": "alta"}, {"cons": "Higor Alves", "proj": "Levva - Processos", "cargo": "Consultor I SP R4", "unidade": "São Paulo", "interno": false, "h": [1.5, 9.8, 3.5, 12.7, 9.5, 27.5, 21.5, 4.0], "ms": 6.9, "mc": 15.6, "va": 8.7, "vp": 126.1, "tend": "alta"}, {"cons": "Higor Alves", "proj": "Mandala - Gestão", "cargo": "Consultor I SP R4", "unidade": "São Paulo", "interno": false, "h": [18.5, 54.3, 36.6, 27.6, 42.1, 33.0, 27.5, 19.0], "ms": 34.3, "mc": 30.4, "va": -3.9, "vp": -11.4, "tend": "queda"}, {"cons": "Jamile Borges", "proj": "Austin", "cargo": "Consultor I", "unidade": "Fortaleza", "interno": false, "h": [49.5, 59.0, 48.0, 60.0, 47.5, 58.5, 52.8, 71.0], "ms": 54.1, "mc": 57.4, "va": 3.3, "vp": 6.1, "tend": "estavel"}, {"cons": "Jamile Borges", "proj": "Grupo Urbmidia", "cargo": "Consultor I", "unidade": "Fortaleza", "interno": false, "h": [22.0, 25.0, 21.0, 21.0, 24.0, 19.5, 12.5, 9.0], "ms": 22.2, "mc": 16.2, "va": -6.0, "vp": -27.0, "tend": "queda"}, {"cons": "Jamile Borges", "proj": "Gvitta - Gestão", "cargo": "Consultor I", "unidade": "Fortaleza", "interno": false, "h": [37.9, 79.8, 55.2, 72.0, 46.0, 39.2, 46.0, 45.8], "ms": 61.2, "mc": 44.2, "va": -17.0, "vp": -27.8, "tend": "queda"}, {"cons": "Jamile Borges", "proj": "PWR Gestão", "cargo": "Consultor I", "unidade": "Fortaleza", "interno": true, "h": [3.5, 7.8, 7.5, 4.5, 9.5, 7.0, 6.0, 7.2], "ms": 5.8, "mc": 7.4, "va": 1.6, "vp": 27.6, "tend": "estavel"}, {"cons": "Jamile Borges", "proj": "Vignoli", "cargo": "Consultor I", "unidade": "Fortaleza", "interno": false, "h": [49.2, 36.0, 43.5, 50.5, 68.0, 40.0, 45.5, 36.5], "ms": 44.8, "mc": 47.5, "va": 2.7, "vp": 6.0, "tend": "estavel"}, {"cons": "Jhony Wérmeson", "proj": "PWR Gestão", "cargo": "ASSISTENTE III", "unidade": "Fortaleza", "interno": true, "h": [155.0, 189.0, 128.0, 194.3, 205.6, 102.5, 179.3, 234.6], "ms": 166.6, "mc": 180.5, "va": 13.9, "vp": 8.3, "tend": "estavel"}, {"cons": "Joao Araujo", "proj": "Austin", "cargo": "Pleno II R4", "unidade": "Fortaleza", "interno": false, "h": [44.0, 46.0, 31.5, 35.8, 30.5, 32.0, 26.5, 45.0], "ms": 39.3, "mc": 33.5, "va": -5.8, "vp": -14.8, "tend": "queda"}, {"cons": "Joao Araujo", "proj": "Colchilar", "cargo": "Pleno II R4", "unidade": "Fortaleza", "interno": false, "h": [8.5, 12.5, 10.5, 10.0, 10.2, 11.8, 18.0, 26.0], "ms": 10.4, "mc": 16.5, "va": 6.1, "vp": 58.7, "tend": "alta"}, {"cons": "Joao Araujo", "proj": "Complexo BM", "cargo": "Pleno II R4", "unidade": "Fortaleza", "interno": false, "h": [10.5, 10.0, 9.5, 11.5, 19.5, 15.0, 7.5, 10.0], "ms": 10.4, "mc": 13.0, "va": 2.6, "vp": 25.0, "tend": "estavel"}, {"cons": "Joao Araujo", "proj": "Fórmula Certa", "cargo": "Pleno II R4", "unidade": "Fortaleza", "interno": false, "h": [5.5, 23.5, 1.5, 10.0, 29.2, 12.5, 32.0, 30.0], "ms": 10.1, "mc": 25.9, "va": 15.8, "vp": 156.4, "tend": "alta"}, {"cons": "Joao Araujo", "proj": "Gvitta - Gestão", "cargo": "Pleno II R4", "unidade": "Fortaleza", "interno": false, "h": [9.5, 33.0, 22.5, 29.2, 34.0, 17.0, 21.0, 26.0], "ms": 23.6, "mc": 24.5, "va": 0.9, "vp": 3.8, "tend": "estavel"}, {"cons": "Joao Araujo", "proj": "PWR Gestão", "cargo": "Pleno II R4", "unidade": "Fortaleza", "interno": true, "h": [11.1, 11.8, 10.0, 9.8, 8.2, 9.5, 5.8, 3.8], "ms": 10.6, "mc": 6.8, "va": -3.8, "vp": -35.8, "tend": "queda"}, {"cons": "Joao Araujo", "proj": "S&M Distribuidora", "cargo": "Pleno II R4", "unidade": "Fortaleza", "interno": false, "h": [25.0, 9.2, 18.0, 4.5, 9.5, 5.8, 34.0, 4.0], "ms": 14.2, "mc": 13.3, "va": -0.9, "vp": -6.3, "tend": "estavel"}, {"cons": "Joao Araujo", "proj": "Santa Praia", "cargo": "Pleno II R4", "unidade": "Fortaleza", "interno": false, "h": [9.0, 7.5, 6.0, 5.0, 3.5, 7.0, 2.8, 8.5], "ms": 6.9, "mc": 5.4, "va": -1.5, "vp": -21.7, "tend": "estavel"}, {"cons": "Joao Araujo", "proj": "Yozenn", "cargo": "Pleno II R4", "unidade": "Fortaleza", "interno": false, "h": [13.0, 9.0, 7.0, 10.0, 6.0, 9.5, 14.5, 14.5], "ms": 9.8, "mc": 11.1, "va": 1.3, "vp": 13.3, "tend": "estavel"}, {"cons": "Lais Moura", "proj": "CAUP - ACG", "cargo": "Consultor II", "unidade": "ACG", "interno": false, "h": [62.5, 170.1, 136.5, 155.4, 182.8, 194.3, 183.8, 248.9], "ms": 131.1, "mc": 202.4, "va": 71.3, "vp": 54.4, "tend": "alta"}, {"cons": "Lais Moura", "proj": "PWR Gestão", "cargo": "Consultor II", "unidade": "Fortaleza", "interno": true, "h": [1.8, 4.0, 23.1, 7.1, 5.0, 4.0, 3.0, 6.0], "ms": 9.0, "mc": 4.5, "va": -4.5, "vp": -50.0, "tend": "queda"}, {"cons": "Leyla Sobral", "proj": "Apoio às Diretorias", "cargo": "SECRETARIA EXECUTIVA", "unidade": "Fortaleza", "interno": true, "h": [44.0, 70.0, 91.0, 53.0, 74.0, 83.0, 60.0, 101.0], "ms": 64.5, "mc": 79.5, "va": 15.0, "vp": 23.3, "tend": "alta"}, {"cons": "Leyla Sobral", "proj": "PWR Gestão", "cargo": "SECRETARIA EXECUTIVA", "unidade": "Fortaleza", "interno": true, "h": [60.0, 91.0, 49.0, 124.0, 98.0, 89.0, 123.0, 98.0], "ms": 81.0, "mc": 102.0, "va": 21.0, "vp": 25.9, "tend": "alta"}, {"cons": "Luana Almeida", "proj": "PWR Gestão", "cargo": "ANALISTA II", "unidade": "Fortaleza", "interno": true, "h": [170.4, 159.6, 116.3, 144.0, 133.3, 144.2, 146.6, 156.2], "ms": 147.6, "mc": 145.1, "va": -2.5, "vp": -1.7, "tend": "estavel"}, {"cons": "Luis Paulo", "proj": "Dir. Sucesso do Cliente", "cargo": "ANALISTA II", "unidade": "Fortaleza", "interno": true, "h": [136.0, 172.6, 142.0, 183.9, 168.2, 174.3, 173.9, 184.8], "ms": 158.6, "mc": 175.3, "va": 16.7, "vp": 10.5, "tend": "alta"}, {"cons": "Luis Paulo", "proj": "PWR Gestão", "cargo": "ANALISTA II", "unidade": "Fortaleza", "interno": true, "h": [3.9, 3.0, 16.8, 9.0, 10.5, 5.0, 5.0, 17.0], "ms": 8.2, "mc": 9.4, "va": 1.2, "vp": 14.6, "tend": "estavel"}, {"cons": "Manuelle Noronha", "proj": "ACG", "cargo": "Consultor I", "unidade": "ACG", "interno": true, "h": [2.0, 7.0, 5.3, 5.0, 6.2, 2.7, 3.2, 4.2], "ms": 4.8, "mc": 4.1, "va": -0.7, "vp": -14.6, "tend": "estavel"}, {"cons": "Manuelle Noronha", "proj": "Dr Joao Paulo - Planejamento Patrimonial", "cargo": "Consultor I", "unidade": "ACG", "interno": false, "h": [3.0, 1.7, 18.6, 7.6, 11.5, 21.9, 21.5, 16.2], "ms": 7.7, "mc": 17.8, "va": 10.1, "vp": 131.2, "tend": "alta"}, {"cons": "Manuelle Noronha", "proj": "Dr. Almir - Planejamento Patrimonial", "cargo": "Consultor I", "unidade": "ACG", "interno": false, "h": [10.0, 6.8, 8.4, 9.6, 3.5, 3.3, 3.6, 4.5], "ms": 8.7, "mc": 3.7, "va": -5.0, "vp": -57.5, "tend": "queda"}, {"cons": "Manuelle Noronha", "proj": "Gvitta - Mapa de Calor", "cargo": "Consultor I", "unidade": "ACG", "interno": false, "h": [13.2, 18.5, 12.5, 23.0, 22.5, 31.2, 41.8, 19.0], "ms": 16.8, "mc": 28.6, "va": 11.8, "vp": 70.2, "tend": "alta"}, {"cons": "Manuelle Noronha", "proj": "JW Saraiva - ACG", "cargo": "Consultor I", "unidade": "ACG", "interno": false, "h": [39.6, 41.0, 23.4, 32.9, 4.4, 5.1, 5.1, 10.8], "ms": 34.2, "mc": 6.3, "va": -27.9, "vp": -81.6, "tend": "queda"}, {"cons": "Manuelle Noronha", "proj": "Mandala - Recuperação de Créditos", "cargo": "Consultor I", "unidade": "ACG", "interno": false, "h": [17.0, 25.6, 8.6, 11.2, 12.5, 9.0, 11.5, 13.1], "ms": 15.6, "mc": 11.5, "va": -4.1, "vp": -26.3, "tend": "queda"}, {"cons": "Manuelle Noronha", "proj": "Medcenter - ACG Holding", "cargo": "Consultor I", "unidade": "ACG", "interno": false, "h": [7.0, 13.0, 4.5, 8.6, 4.9, 5.2, 6.6, 12.5], "ms": 8.3, "mc": 7.3, "va": -1.0, "vp": -12.0, "tend": "estavel"}, {"cons": "Manuelle Noronha", "proj": "PWR Gestão", "cargo": "Consultor I", "unidade": "Fortaleza", "interno": true, "h": [5.0, 11.0, 9.2, 8.7, 21.1, 6.9, 5.8, 5.2], "ms": 8.5, "mc": 9.8, "va": 1.3, "vp": 15.3, "tend": "estavel"}, {"cons": "Manuelle Noronha", "proj": "Piso Novo - ACG", "cargo": "Consultor I", "unidade": "ACG", "interno": false, "h": [2.8, 2.7, 8.0, 5.8, 9.1, 2.7, 3.3, 10.4], "ms": 4.8, "mc": 6.4, "va": 1.6, "vp": 33.3, "tend": "estavel"}, {"cons": "Manuelle Noronha", "proj": "Santa Rafaela - Acompanhamento ACG", "cargo": "Consultor I", "unidade": "ACG", "interno": false, "h": [6.2, 11.1, 12.5, 6.4, 14.2, 7.8, 24.6, 19.3], "ms": 9.1, "mc": 16.5, "va": 7.4, "vp": 81.3, "tend": "alta"}, {"cons": "Mathaus Cruz", "proj": "Anaju", "cargo": "Pleno III", "unidade": "Fortaleza", "interno": false, "h": [4.0, 4.0, 5.0, 8.0, 2.9, 2.0, 1.5, 2.0], "ms": 5.2, "mc": 2.1, "va": -3.1, "vp": -59.6, "tend": "queda"}, {"cons": "Mathaus Cruz", "proj": "Gestão Interna de Projetos", "cargo": "Pleno III", "unidade": "Fortaleza", "interno": true, "h": [4.0, 4.0, 2.0, 3.0, 4.0, 4.5, 4.0, 1.0], "ms": 3.2, "mc": 3.4, "va": 0.2, "vp": 6.2, "tend": "estavel"}, {"cons": "Mathaus Cruz", "proj": "Gosto Mineiro", "cargo": "Pleno III", "unidade": "Fortaleza", "interno": false, "h": [14.0, 21.8, 31.6, 21.0, 21.0, 15.0, 28.0, 19.0], "ms": 22.1, "mc": 20.8, "va": -1.3, "vp": -5.9, "tend": "estavel"}, {"cons": "Mathaus Cruz", "proj": "Matmed", "cargo": "Pleno III", "unidade": "Fortaleza", "interno": false, "h": [16.0, 41.0, 16.5, 15.0, 15.0, 17.0, 24.0, 23.0], "ms": 22.1, "mc": 19.8, "va": -2.3, "vp": -10.4, "tend": "estavel"}, {"cons": "Mathaus Cruz", "proj": "PWR Gestão", "cargo": "Pleno III", "unidade": "Fortaleza", "interno": true, "h": [3.0, 8.5, 9.0, 7.5, 9.0, 25.1, 5.0, 4.0], "ms": 7.0, "mc": 10.8, "va": 3.8, "vp": 54.3, "tend": "alta"}, {"cons": "Mathaus Cruz", "proj": "Tubocone", "cargo": "Pleno III", "unidade": "Fortaleza", "interno": false, "h": [26.0, 45.8, 46.8, 55.0, 70.0, 62.5, 59.7, 48.0], "ms": 43.4, "mc": 60.0, "va": 16.6, "vp": 38.2, "tend": "alta"}, {"cons": "Matheus Lima", "proj": "PWR Gestão - Tecnologia e Inovação", "cargo": "Desenvolvedor Júnior III", "unidade": "Fortaleza", "interno": true, "h": [6.5, 9.5, 4.0, 11.2, 5.0, 6.0, 14.4, 20.0], "ms": 7.8, "mc": 11.4, "va": 3.6, "vp": 46.2, "tend": "alta"}, {"cons": "Matheus Lima", "proj": "Tubocone - SIG", "cargo": "Desenvolvedor Júnior III", "unidade": "Fortaleza", "interno": false, "h": [119.7, 94.7, 40.0, 61.1, 45.3, 116.2, 74.6, 4.0], "ms": 78.9, "mc": 60.0, "va": -18.9, "vp": -24.0, "tend": "queda"}, {"cons": "Matheus Luiz", "proj": "Karams - Gestão", "cargo": "Pleno II SP", "unidade": "São Paulo", "interno": false, "h": [21.0, 39.5, 35.5, 45.5, 44.5, 20.5, 39.5, 20.5], "ms": 35.4, "mc": 31.2, "va": -4.2, "vp": -11.9, "tend": "queda"}, {"cons": "Matheus Luiz", "proj": "Levva - Processos", "cargo": "Pleno II SP", "unidade": "São Paulo", "interno": false, "h": [15.0, 10.5, 18.0, 12.5, 6.0, 24.5, 24.0, 14.0], "ms": 14.0, "mc": 17.1, "va": 3.1, "vp": 22.1, "tend": "alta"}, {"cons": "Matheus Luiz", "proj": "PWR Gestão", "cargo": "Pleno II SP", "unidade": "Fortaleza", "interno": true, "h": [4.5, 22.0, 13.0, 14.5, 13.5, 4.0, 3.0, 14.0], "ms": 13.5, "mc": 8.6, "va": -4.9, "vp": -36.3, "tend": "queda"}, {"cons": "Maycom Barbosa", "proj": "ACG", "cargo": "Consultor III R4", "unidade": "ACG", "interno": true, "h": [5.0, 11.0, 4.2, 2.0, 8.5, 6.8, 3.0, 2.5], "ms": 5.6, "mc": 5.2, "va": -0.4, "vp": -7.1, "tend": "estavel"}, {"cons": "Maycom Barbosa", "proj": "Agência Tasty - Acompanhamento", "cargo": "Consultor III R4", "unidade": "ACG", "interno": false, "h": [0.7, 1.0, 0.5, 1.4, 4.9, 12.0, 9.2, 10.1], "ms": 0.9, "mc": 9.1, "va": 8.2, "vp": 911.1, "tend": "alta"}, {"cons": "Maycom Barbosa", "proj": "Atra, Viva e Titan - ACG", "cargo": "Consultor III R4", "unidade": "ACG", "interno": false, "h": [8.2, 11.7, 3.7, 16.7, 19.1, 2.7, 11.5, 9.8], "ms": 10.1, "mc": 10.8, "va": 0.7, "vp": 6.9, "tend": "estavel"}, {"cons": "Maycom Barbosa", "proj": "CAUP - ACG", "cargo": "Consultor III R4", "unidade": "ACG", "interno": false, "h": [10.4, 24.2, 13.1, 69.7, 35.8, 51.8, 75.4, 27.0], "ms": 29.4, "mc": 47.5, "va": 18.1, "vp": 61.6, "tend": "alta"}, {"cons": "Maycom Barbosa", "proj": "Casa Di Campo - ACG", "cargo": "Consultor III R4", "unidade": "ACG", "interno": false, "h": [1.6, 10.1, 5.9, 3.5, 16.0, 17.0, 13.6, 15.7], "ms": 5.3, "mc": 15.6, "va": 10.3, "vp": 194.3, "tend": "alta"}, {"cons": "Maycom Barbosa", "proj": "Mandala - Planejamento Patrimonial", "cargo": "Consultor III R4", "unidade": "ACG", "interno": false, "h": [8.4, 15.3, 3.0, 5.8, 2.6, 12.5, 4.5, 21.2], "ms": 8.1, "mc": 10.2, "va": 2.1, "vp": 25.9, "tend": "estavel"}, {"cons": "Maycom Barbosa", "proj": "Newlight - Acompanhamento ACG", "cargo": "Consultor III R4", "unidade": "ACG", "interno": false, "h": [4.5, 6.3, 2.7, 13.4, 14.1, 3.7, 8.6, 8.8], "ms": 6.7, "mc": 8.8, "va": 2.1, "vp": 31.3, "tend": "estavel"}, {"cons": "Maycom Barbosa", "proj": "Overlabel - ACG", "cargo": "Consultor III R4", "unidade": "ACG", "interno": false, "h": [9.5, 4.3, 0.8, 12.2, 14.2, 9.8, 21.0, 8.4], "ms": 6.7, "mc": 13.4, "va": 6.7, "vp": 100.0, "tend": "alta"}, {"cons": "Maycom Barbosa", "proj": "PWR - ACG", "cargo": "Consultor III R4", "unidade": "Fortaleza", "interno": true, "h": [13.7, 18.1, 6.1, 13.5, 22.2, 5.1, 2.0, 15.9], "ms": 12.9, "mc": 11.3, "va": -1.6, "vp": -12.4, "tend": "estavel"}, {"cons": "Maycom Barbosa", "proj": "PWR Gestão", "cargo": "Consultor III R4", "unidade": "Fortaleza", "interno": true, "h": [3.5, 6.0, 2.0, 12.1, 7.2, 9.2, 7.0, 5.5], "ms": 5.9, "mc": 7.2, "va": 1.3, "vp": 22.0, "tend": "estavel"}, {"cons": "Maycom Barbosa", "proj": "Santa Rafaela - Acompanhamento ACG", "cargo": "Consultor III R4", "unidade": "ACG", "interno": false, "h": [15.6, 7.0, 10.9, 2.2, 7.3, 7.5, 8.0, 7.6], "ms": 9.0, "mc": 7.6, "va": -1.4, "vp": -15.6, "tend": "estavel"}, {"cons": "Maycom Barbosa", "proj": "YOOU Group - Partnership", "cargo": "Consultor III R4", "unidade": "ACG", "interno": false, "h": [1.6, 25.1, 3.5, 3.6, 3.3, 11.3, 3.4, 18.2], "ms": 8.4, "mc": 9.1, "va": 0.7, "vp": 8.3, "tend": "estavel"}, {"cons": "Maycom Barbosa", "proj": "Óticas Marília - Acompanhamento ACG", "cargo": "Consultor III R4", "unidade": "ACG", "interno": false, "h": [11.5, 8.5, 4.6, 5.3, 1.4, 1.5, 2.5, 5.1], "ms": 7.5, "mc": 2.6, "va": -4.9, "vp": -65.3, "tend": "queda"}, {"cons": "Pedro Medina", "proj": "CBH - Gestão", "cargo": "Consultor I SP R4", "unidade": "São Paulo", "interno": false, "h": [21.5, 18.2, 17.5, 27.4, 26.8, 23.8, 17.8, 28.2], "ms": 21.2, "mc": 24.2, "va": 3.0, "vp": 14.2, "tend": "alta"}, {"cons": "Pedro Medina", "proj": "Capital Upgrade - Espião", "cargo": "Consultor I SP R4", "unidade": "São Paulo", "interno": false, "h": [9.8, 3.8, 10.5, 16.6, 11.9, 6.7, 5.5, 1.5], "ms": 10.2, "mc": 6.4, "va": -3.8, "vp": -37.3, "tend": "queda"}, {"cons": "Pedro Medina", "proj": "Deccó", "cargo": "Consultor I SP R4", "unidade": "São Paulo", "interno": false, "h": [23.5, 18.8, 17.8, 23.7, 19.9, 36.8, 26.8, 49.6], "ms": 20.9, "mc": 33.3, "va": 12.4, "vp": 59.3, "tend": "alta"}, {"cons": "Pedro Medina", "proj": "Karams - Gestão", "cargo": "Consultor I SP R4", "unidade": "São Paulo", "interno": false, "h": [20.2, 18.2, 40.5, 32.0, 34.9, 30.8, 26.4, 32.8], "ms": 27.8, "mc": 31.2, "va": 3.4, "vp": 12.2, "tend": "alta"}, {"cons": "Pedro Medina", "proj": "PWR Gestão", "cargo": "Consultor I SP R4", "unidade": "Fortaleza", "interno": true, "h": [5.8, 1.0, 6.0, 7.5, 4.5, 5.0, 7.0, 5.5], "ms": 5.1, "mc": 5.5, "va": 0.4, "vp": 7.8, "tend": "estavel"}, {"cons": "Pedro Medina", "proj": "R. Invest - Financeiro", "cargo": "Consultor I SP R4", "unidade": "São Paulo", "interno": false, "h": [25.0, 26.0, 26.8, 29.3, 55.1, 31.1, 20.4, 32.2], "ms": 26.8, "mc": 34.7, "va": 7.9, "vp": 29.5, "tend": "alta"}, {"cons": "Rafael Honorato", "proj": "J. Patrício", "cargo": "Pleno II", "unidade": "Fortaleza", "interno": false, "h": [14.0, 26.0, 7.5, 14.0, 12.5, 2.5, 19.0, 4.0], "ms": 15.4, "mc": 9.5, "va": -5.9, "vp": -38.3, "tend": "queda"}, {"cons": "Rafael Honorato", "proj": "JW Saraiva - PE", "cargo": "Pleno II", "unidade": "Fortaleza", "interno": false, "h": [6.5, 2.0, 7.0, 5.0, 10.5, 3.5, 1.5, 7.0], "ms": 5.1, "mc": 5.6, "va": 0.5, "vp": 9.8, "tend": "estavel"}, {"cons": "Rafael Honorato", "proj": "Serra Tubos", "cargo": "Pleno II", "unidade": "Fortaleza", "interno": false, "h": [40.0, 3.0, 2.0, 2.0, 6.5, 11.5, 5.0, 5.0], "ms": 11.8, "mc": 7.0, "va": -4.8, "vp": -40.7, "tend": "queda"}, {"cons": "Rafael Honorato", "proj": "Teles e Falchi", "cargo": "Pleno II", "unidade": "Fortaleza", "interno": false, "h": [4.0, 12.5, 6.5, 2.5, 15.0, 6.5, 9.5, 21.5], "ms": 6.4, "mc": 13.1, "va": 6.7, "vp": 104.7, "tend": "alta"}, {"cons": "Rafael Honorato", "proj": "Transnacional", "cargo": "Pleno II", "unidade": "Fortaleza", "interno": false, "h": [9.0, 14.0, 9.0, 2.0, 6.0, 7.0, 9.5, 12.0], "ms": 8.5, "mc": 8.6, "va": 0.1, "vp": 1.2, "tend": "estavel"}, {"cons": "Rafael Honorato", "proj": "Vale Milk", "cargo": "Pleno II", "unidade": "Fortaleza", "interno": false, "h": [16.5, 17.5, 21.0, 16.8, 27.8, 3.5, 22.5, 26.0], "ms": 17.9, "mc": 19.9, "va": 2.0, "vp": 11.2, "tend": "estavel"}, {"cons": "Sandy Lino", "proj": "PWR Gestão", "cargo": "ANALISTA III SP", "unidade": "Fortaleza", "interno": true, "h": [153.5, 130.0, 158.0, 185.0, 167.5, 175.5, 92.5, 185.0], "ms": 156.6, "mc": 155.1, "va": -1.5, "vp": -1.0, "tend": "estavel"}, {"cons": "Sâmya Aguiar", "proj": "PWR Gestão", "cargo": "ANALISTA III", "unidade": "Fortaleza", "interno": true, "h": [134.5, 173.5, 119.0, 184.0, 171.5, 184.5, 191.0, 123.0], "ms": 152.8, "mc": 167.5, "va": 14.7, "vp": 9.6, "tend": "estavel"}, {"cons": "Thalis Rebouças", "proj": "Formula Certa - Tecnologia", "cargo": "Analista de BI Pleno I", "unidade": "Fortaleza", "interno": false, "h": [15.2, 53.5, 29.0, 32.8, 21.5, 27.0, 18.6, 13.9], "ms": 32.6, "mc": 20.2, "va": -12.4, "vp": -38.0, "tend": "queda"}, {"cons": "Thalis Rebouças", "proj": "PWR Gestão - Tecnologia e Inovação", "cargo": "Analista de BI Pleno I", "unidade": "Fortaleza", "interno": true, "h": [24.2, 41.2, 27.0, 22.8, 26.2, 33.9, 13.9, 51.6], "ms": 28.8, "mc": 31.4, "va": 2.6, "vp": 9.0, "tend": "estavel"}, {"cons": "Thalis Rebouças", "proj": "Vale Milk", "cargo": "Analista de BI Pleno I", "unidade": "Fortaleza", "interno": false, "h": [25.0, 11.5, 15.5, 30.8, 17.0, 6.0, 4.1, 28.0], "ms": 20.7, "mc": 13.8, "va": -6.9, "vp": -33.3, "tend": "queda"}, {"cons": "Thiago Crompton", "proj": "CBH - Gestão", "cargo": "Pleno I SP", "unidade": "São Paulo", "interno": false, "h": [5.8, 6.8, 9.3, 10.2, 7.0, 13.5, 7.8, 0.5], "ms": 8.0, "mc": 7.2, "va": -0.8, "vp": -10.0, "tend": "estavel"}, {"cons": "Thiago Crompton", "proj": "Deltamed", "cargo": "Pleno I SP", "unidade": "São Paulo", "interno": false, "h": [7.5, 7.2, 20.5, 22.8, 17.5, 20.5, 8.5, 13.5], "ms": 14.5, "mc": 15.0, "va": 0.5, "vp": 3.4, "tend": "estavel"}, {"cons": "Thiago Crompton", "proj": "Karams - Gestão", "cargo": "Pleno I SP", "unidade": "São Paulo", "interno": false, "h": [15.5, 9.5, 16.0, 37.8, 34.2, 15.0, 36.0, 8.5], "ms": 19.7, "mc": 23.4, "va": 3.7, "vp": 18.8, "tend": "alta"}, {"cons": "Thiago Crompton", "proj": "Milênio", "cargo": "Pleno I SP", "unidade": "São Paulo", "interno": false, "h": [43.8, 53.0, 34.0, 47.8, 37.8, 43.8, 33.8, 32.8], "ms": 44.6, "mc": 37.0, "va": -7.6, "vp": -17.0, "tend": "queda"}, {"cons": "Thiago Crompton", "proj": "PWR Gestão", "cargo": "Pleno I SP", "unidade": "Fortaleza", "interno": true, "h": [4.0, 4.5, 16.2, 18.6, 10.5, 14.2, 4.5, 6.5], "ms": 10.8, "mc": 8.9, "va": -1.9, "vp": -17.6, "tend": "estavel"}, {"cons": "Tiago Fialho", "proj": "Dir. Comercial", "cargo": "ANALISTA II R4", "unidade": "Fortaleza", "interno": true, "h": [116.0, 129.0, 141.0, 59.5, 125.0, 134.5, 104.5, 199.0], "ms": 111.4, "mc": 140.8, "va": 29.4, "vp": 26.4, "tend": "alta"}, {"cons": "Vander Rosa", "proj": "FBS - Hospedagem BI", "cargo": "Analista de BI Júnior II", "unidade": "Fortaleza", "interno": false, "h": [19.7, 36.8, 47.3, 58.7, 79.4, 66.3, 78.1, 13.3], "ms": 40.6, "mc": 59.3, "va": 18.7, "vp": 46.1, "tend": "alta"}, {"cons": "Vander Rosa", "proj": "PWR Gestão - Tecnologia e Inovação", "cargo": "Analista de BI Júnior II", "unidade": "Fortaleza", "interno": true, "h": [15.1, 42.0, 27.3, 38.9, 31.2, 30.4, 20.1, 0.4], "ms": 30.8, "mc": 20.5, "va": -10.3, "vp": -33.4, "tend": "queda"}, {"cons": "Victor Gomes", "proj": "Dir. Sucesso do Cliente", "cargo": "ASSISTENTE II", "unidade": "Fortaleza", "interno": true, "h": [153.0, 193.8, 154.3, 182.0, 174.8, 171.4, 176.8, 194.0], "ms": 170.8, "mc": 179.2, "va": 8.4, "vp": 4.9, "tend": "estavel"}, {"cons": "Victor Gomes", "proj": "PWR Gestão", "cargo": "ASSISTENTE II", "unidade": "Fortaleza", "interno": true, "h": [1.0, 3.0, 15.0, 8.5, 3.0, 13.5, 4.0, 5.0], "ms": 6.9, "mc": 6.4, "va": -0.5, "vp": -7.2, "tend": "estavel"}, {"cons": "Vinicius Correia", "proj": "Clínica Evolud", "cargo": "Pleno I R4", "unidade": "Fortaleza", "interno": false, "h": [19.0, 18.2, 30.2, 25.2, 5.2, 28.0, 13.0, 12.8], "ms": 23.2, "mc": 14.8, "va": -8.4, "vp": -36.2, "tend": "queda"}, {"cons": "Vinicius Correia", "proj": "Leal Queiroz - Gestão", "cargo": "Pleno I R4", "unidade": "Fortaleza", "interno": false, "h": [5.8, 24.5, 15.5, 9.8, 9.0, 7.2, 18.8, 33.1], "ms": 13.9, "mc": 17.0, "va": 3.1, "vp": 22.3, "tend": "alta"}, {"cons": "Vinicius Correia", "proj": "PWR Gestão", "cargo": "Pleno I R4", "unidade": "Fortaleza", "interno": true, "h": [3.8, 3.8, 9.8, 11.8, 1.0, 11.8, 3.8, 5.2], "ms": 7.2, "mc": 5.4, "va": -1.8, "vp": -25.0, "tend": "estavel"}, {"cons": "Vinicius Correia", "proj": "Pro Car - Comercial", "cargo": "Pleno I R4", "unidade": "Fortaleza", "interno": false, "h": [35.2, 42.2, 15.0, 18.0, 14.0, 10.5, 6.5, 11.5], "ms": 27.6, "mc": 10.6, "va": -17.0, "vp": -61.6, "tend": "queda"}];
+const DATA_PROJ = [{"nome": "3G Engenharia", "unidade": "Fortaleza", "interno": false, "h": [14.3, 20.0, 9.2, 32.7, 53.0, 71.8, 48.6, 58.5], "ms": 19.1, "mc": 58.0, "va": 38.9, "vp": 203.7, "tend": "alta"}, {"nome": "ACG", "unidade": "ACG", "interno": true, "h": [34.5, 89.2, 68.0, 58.0, 116.8, 67.8, 72.4, 126.5], "ms": 62.4, "mc": 95.9, "va": 33.5, "vp": 53.7, "tend": "alta"}, {"nome": "ACT", "unidade": "Fortaleza", "interno": false, "h": [18.2, 37.8, 9.5, 20.0, 22.2, 23.7, 19.2, 13.2], "ms": 21.4, "mc": 19.6, "va": -1.8, "vp": -8.4, "tend": "estavel"}, {"nome": "Agência Tasty - Acompanhamento", "unidade": "ACG", "interno": false, "h": [0.7, 1.0, 0.5, 2.9, 4.9, 13.9, 13.5, 25.7], "ms": 1.3, "mc": 14.5, "va": 13.2, "vp": 1015.4, "tend": "alta"}, {"nome": "Anaju", "unidade": "Fortaleza", "interno": false, "h": [32.1, 49.0, 36.2, 57.0, 53.8, 57.8, 53.5, 51.9], "ms": 43.6, "mc": 54.2, "va": 10.6, "vp": 24.3, "tend": "alta"}, {"nome": "Antocon", "unidade": "São Paulo", "interno": false, "h": [85.0, 59.4, 60.0, 65.7, 34.5, 48.0, 56.5, 50.5], "ms": 67.5, "mc": 47.4, "va": -20.1, "vp": -29.8, "tend": "queda"}, {"nome": "Apoio às Diretorias", "unidade": "Fortaleza", "interno": true, "h": [44.0, 70.0, 91.0, 53.0, 74.0, 83.0, 60.0, 101.0], "ms": 64.5, "mc": 79.5, "va": 15.0, "vp": 23.3, "tend": "alta"}, {"nome": "Artfix", "unidade": "São Paulo", "interno": false, "h": [51.2, 41.8, 25.0, 35.5, 44.0, 26.0, 17.0, 12.4], "ms": 38.4, "mc": 24.9, "va": -13.5, "vp": -35.2, "tend": "queda"}, {"nome": "Atra, Viva e Titan - ACG", "unidade": "ACG", "interno": false, "h": [9.7, 21.7, 21.2, 36.9, 49.1, 26.4, 58.5, 54.6], "ms": 22.4, "mc": 47.2, "va": 24.8, "vp": 110.7, "tend": "alta"}, {"nome": "AtraSorb, AvantCare e Titán Portas", "unidade": "São Paulo", "interno": false, "h": [10.0, 41.0, 26.8, 26.5, 41.8, 89.2, 71.0, 59.0], "ms": 26.1, "mc": 65.3, "va": 39.2, "vp": 150.2, "tend": "alta"}, {"nome": "Austin", "unidade": "Fortaleza", "interno": false, "h": [223.6, 238.4, 175.5, 245.5, 174.0, 175.0, 160.8, 176.0], "ms": 220.8, "mc": 171.4, "va": -49.4, "vp": -22.4, "tend": "queda"}, {"nome": "Bentô", "unidade": "Fortaleza", "interno": false, "h": [20.1, 18.0, 19.0, 35.9, 35.6, 24.5, 14.1, 60.0], "ms": 23.2, "mc": 33.6, "va": 10.4, "vp": 44.8, "tend": "alta"}, {"nome": "Bentô - Acompanhamento ACG", "unidade": "ACG", "interno": false, "h": [1.0, 47.2, 23.2, 32.2, 26.5, 36.5, 55.5, 54.2], "ms": 25.9, "mc": 43.2, "va": 17.3, "vp": 66.8, "tend": "alta"}, {"nome": "Bom Pastor", "unidade": "Fortaleza", "interno": false, "h": [7.3, 20.5, 7.5, 8.2, 9.5, 52.2, 11.5, 21.0], "ms": 10.9, "mc": 23.6, "va": 12.7, "vp": 116.5, "tend": "alta"}, {"nome": "CAUP - ACG", "unidade": "ACG", "interno": false, "h": [76.9, 204.3, 165.1, 261.6, 256.1, 319.0, 454.9, 517.0], "ms": 177.0, "mc": 386.8, "va": 209.8, "vp": 118.5, "tend": "alta"}, {"nome": "CAUP - Academia de Vendas", "unidade": "São Paulo", "interno": false, "h": [9.0, 19.5, 12.0, 10.5, 6.0, 7.8, 10.5, 16.0], "ms": 12.8, "mc": 10.1, "va": -2.7, "vp": -21.1, "tend": "estavel"}, {"nome": "CAUP - Tech", "unidade": "Fortaleza", "interno": false, "h": [4.0, 21.8, 21.3, 26.5, 57.2, 8.0, 49.8, 210.4], "ms": 18.4, "mc": 81.3, "va": 62.9, "vp": 341.8, "tend": "alta"}, {"nome": "CBH - Gestão", "unidade": "São Paulo", "interno": false, "h": [31.5, 31.2, 31.2, 46.6, 40.0, 48.3, 25.6, 28.7], "ms": 35.1, "mc": 35.7, "va": 0.6, "vp": 1.7, "tend": "estavel"}, {"nome": "CCON", "unidade": "Fortaleza", "interno": false, "h": [14.7, 59.0, 11.2, 48.7, 57.4, 44.2, 46.1, 78.1], "ms": 33.4, "mc": 56.4, "va": 23.0, "vp": 68.9, "tend": "alta"}, {"nome": "CS Distribuidora - ACG", "unidade": "ACG", "interno": false, "h": [4.8, 6.2, 5.9, 10.2, 13.7, 10.1, 5.7, 12.0], "ms": 6.8, "mc": 10.4, "va": 3.6, "vp": 52.9, "tend": "alta"}, {"nome": "Capital Upgrade - CAUP", "unidade": "Fortaleza", "interno": true, "h": [450.3, 358.4, 318.9, 276.8, 370.9, 359.4, 625.1, 499.1], "ms": 351.1, "mc": 463.6, "va": 112.5, "vp": 32.0, "tend": "alta"}, {"nome": "Capital Upgrade - Espião", "unidade": "São Paulo", "interno": false, "h": [9.8, 3.8, 10.5, 18.6, 11.9, 10.2, 5.5, 1.5], "ms": 10.7, "mc": 7.3, "va": -3.4, "vp": -31.8, "tend": "queda"}, {"nome": "Casa Di Campo", "unidade": "Fortaleza", "interno": false, "h": [26.4, 30.2, 37.0, 106.5, 26.5, 25.9, 70.0, 46.0], "ms": 50.0, "mc": 42.1, "va": -7.9, "vp": -15.8, "tend": "queda"}, {"nome": "Casa Di Campo - ACG", "unidade": "ACG", "interno": false, "h": [1.6, 19.8, 26.8, 26.3, 25.2, 39.0, 39.9, 39.6], "ms": 18.6, "mc": 35.9, "va": 17.3, "vp": 93.0, "tend": "alta"}, {"nome": "Cattis Medical", "unidade": "Fortaleza", "interno": false, "h": [10.8, 16.2, 23.5, 29.4, 31.5, 27.6, 15.8, 21.2], "ms": 20.0, "mc": 24.0, "va": 4.0, "vp": 20.0, "tend": "alta"}, {"nome": "Centro Brasileiro de Hidrolipo - ACG", "unidade": "ACG", "interno": false, "h": [11.3, 21.5, 15.2, 27.2, 27.0, 43.0, 40.0, 46.2], "ms": 18.8, "mc": 39.1, "va": 20.3, "vp": 108.0, "tend": "alta"}, {"nome": "Centro Medico Mauricio Carvalho", "unidade": "Fortaleza", "interno": false, "h": [86.3, 34.5, 23.5, 68.8, 32.5, 44.0, 43.2, 29.5], "ms": 53.3, "mc": 37.3, "va": -16.0, "vp": -30.0, "tend": "queda"}, {"nome": "Centro Medico Mauricio Carvalho - Acompanhamento ACG", "unidade": "ACG", "interno": false, "h": [7.2, 6.5, 20.5, 24.2, 29.0, 13.0, 8.8, 33.1], "ms": 14.6, "mc": 21.0, "va": 6.4, "vp": 43.8, "tend": "alta"}, {"nome": "Cerus Bank - ACG", "unidade": "ACG", "interno": false, "h": [7.5, 44.8, 19.9, 62.0, 24.9, 88.9, 71.7, 73.8], "ms": 33.5, "mc": 64.8, "va": 31.3, "vp": 93.4, "tend": "alta"}, {"nome": "Clínica Evolud", "unidade": "Fortaleza", "interno": false, "h": [36.0, 38.8, 56.8, 35.2, 23.2, 61.5, 50.0, 39.6], "ms": 41.7, "mc": 43.6, "va": 1.9, "vp": 4.6, "tend": "estavel"}, {"nome": "Clínica Evolud - Tech", "unidade": "Fortaleza", "interno": false, "h": [66.9, 68.7, 87.8, 143.0, 101.6, 72.4, 54.9, 164.4], "ms": 91.6, "mc": 98.3, "va": 6.7, "vp": 7.3, "tend": "estavel"}, {"nome": "Clínica Santa Rafaela", "unidade": "Fortaleza", "interno": false, "h": [22.3, 51.0, 10.0, 31.8, 39.8, 65.5, 36.5, 36.2], "ms": 28.8, "mc": 44.5, "va": 15.7, "vp": 54.5, "tend": "alta"}, {"nome": "Colchilar", "unidade": "Fortaleza", "interno": false, "h": [8.5, 12.5, 10.5, 10.0, 10.2, 34.2, 41.4, 68.6], "ms": 10.4, "mc": 38.6, "va": 28.2, "vp": 271.2, "tend": "alta"}, {"nome": "Coldtérmica", "unidade": "São Paulo", "interno": false, "h": [57.0, 72.7, 27.1, 51.8, 46.5, 62.5, 44.2, 125.5], "ms": 52.1, "mc": 69.7, "va": 17.6, "vp": 33.8, "tend": "alta"}, {"nome": "Complexo BM", "unidade": "Fortaleza", "interno": false, "h": [44.0, 54.2, 40.2, 46.0, 52.5, 48.0, 34.8, 24.8], "ms": 46.1, "mc": 40.0, "va": -6.1, "vp": -13.2, "tend": "queda"}, {"nome": "Complexo Mareiro - Operações", "unidade": "Fortaleza", "interno": false, "h": [36.8, 54.9, 45.2, 61.6, 53.0, 58.8, 68.0, 44.0], "ms": 49.6, "mc": 56.0, "va": 6.4, "vp": 12.9, "tend": "alta"}, {"nome": "Construnova", "unidade": "Fortaleza", "interno": false, "h": [19.2, 60.8, 12.2, 45.2, 49.5, 54.2, 11.5, 28.2], "ms": 34.4, "mc": 35.9, "va": 1.5, "vp": 4.4, "tend": "estavel"}, {"nome": "Construtora Coral", "unidade": "Fortaleza", "interno": false, "h": [30.9, 20.6, 42.5, 36.6, 33.6, 74.7, 60.0, 53.1], "ms": 32.6, "mc": 55.4, "va": 22.8, "vp": 69.9, "tend": "alta"}, {"nome": "DIMAX", "unidade": "Fortaleza", "interno": false, "h": [11.8, 46.6, 24.8, 30.8, 17.5, 19.4, 16.0, 25.1], "ms": 28.5, "mc": 19.5, "va": -9.0, "vp": -31.6, "tend": "queda"}, {"nome": "Deccó", "unidade": "São Paulo", "interno": false, "h": [30.5, 29.8, 39.8, 46.2, 54.2, 57.2, 43.3, 74.2], "ms": 36.5, "mc": 57.2, "va": 20.7, "vp": 56.7, "tend": "alta"}, {"nome": "Deltamed", "unidade": "São Paulo", "interno": false, "h": [33.2, 94.9, 56.3, 52.4, 45.5, 91.6, 59.7, 49.0], "ms": 59.2, "mc": 61.5, "va": 2.3, "vp": 3.9, "tend": "estavel"}, {"nome": "Dir. Comercial", "unidade": "Fortaleza", "interno": true, "h": [116.0, 129.0, 141.0, 59.5, 125.0, 134.5, 104.5, 199.0], "ms": 111.4, "mc": 140.8, "va": 29.4, "vp": 26.4, "tend": "alta"}, {"nome": "Dir. Sucesso do Cliente", "unidade": "Fortaleza", "interno": true, "h": [289.0, 366.5, 296.3, 365.9, 343.0, 345.7, 350.7, 378.8], "ms": 329.4, "mc": 354.5, "va": 25.1, "vp": 7.6, "tend": "estavel"}, {"nome": "Distribuidora Machado", "unidade": "ACG", "interno": false, "h": [3.0, 1.0, 1.8, 4.2, 2.5, 4.8, 3.8, 13.1], "ms": 2.5, "mc": 6.0, "va": 3.5, "vp": 140.0, "tend": "alta"}, {"nome": "DoceVille", "unidade": "Fortaleza", "interno": false, "h": [28.5, 24.5, 32.0, 30.0, 21.8, 34.2, 31.5, 39.0], "ms": 28.8, "mc": 31.6, "va": 2.8, "vp": 9.7, "tend": "estavel"}, {"nome": "DoceVille - Comercial", "unidade": "Fortaleza", "interno": false, "h": [51.2, 47.7, 25.1, 44.8, 27.3, 33.0, 14.2, 21.3], "ms": 42.2, "mc": 23.9, "va": -18.3, "vp": -43.4, "tend": "queda"}, {"nome": "Dr Joao Paulo - Planejamento Patrimonial", "unidade": "ACG", "interno": false, "h": [5.2, 2.8, 28.1, 17.2, 17.5, 33.4, 40.9, 32.5], "ms": 13.3, "mc": 31.1, "va": 17.8, "vp": 133.8, "tend": "alta"}, {"nome": "Dr. Almir - Planejamento Patrimonial", "unidade": "ACG", "interno": false, "h": [10.0, 7.8, 10.4, 15.6, 6.8, 6.0, 6.1, 6.8], "ms": 10.9, "mc": 6.4, "va": -4.5, "vp": -41.3, "tend": "queda"}, {"nome": "Eletric Minas", "unidade": "São Paulo", "interno": false, "h": [25.9, 77.5, 91.8, 122.0, 79.3, 115.2, 78.8, 100.0], "ms": 79.3, "mc": 93.3, "va": 14.0, "vp": 17.7, "tend": "alta"}, {"nome": "Exxpert Tax", "unidade": "Fortaleza", "interno": false, "h": [21.1, 22.9, 29.7, 35.4, 46.6, 30.5, 15.9, 39.3], "ms": 27.3, "mc": 33.1, "va": 5.8, "vp": 21.2, "tend": "alta"}, {"nome": "FBS - Hospedagem BI", "unidade": "Fortaleza", "interno": false, "h": [19.7, 36.8, 50.3, 58.7, 79.4, 72.3, 95.8, 15.3], "ms": 41.4, "mc": 65.7, "va": 24.3, "vp": 58.7, "tend": "alta"}, {"nome": "Fiducial Imobiliária", "unidade": "Fortaleza", "interno": false, "h": [18.3, 20.8, 11.5, 35.0, 41.8, 34.0, 32.8, 45.8], "ms": 21.4, "mc": 38.6, "va": 17.2, "vp": 80.4, "tend": "alta"}, {"nome": "Formula Certa - Tecnologia", "unidade": "Fortaleza", "interno": false, "h": [46.5, 61.3, 29.0, 52.9, 137.9, 121.5, 83.6, 49.6], "ms": 47.4, "mc": 98.2, "va": 50.8, "vp": 107.2, "tend": "alta"}, {"nome": "Fórmula Certa", "unidade": "Fortaleza", "interno": false, "h": [5.5, 27.5, 1.5, 10.0, 29.2, 46.1, 71.5, 97.2], "ms": 11.1, "mc": 61.0, "va": 49.9, "vp": 449.5, "tend": "alta"}, {"nome": "Gestão Interna de Projetos", "unidade": "Fortaleza", "interno": true, "h": [4.0, 4.0, 2.0, 3.0, 4.0, 4.5, 4.0, 1.0], "ms": 3.2, "mc": 3.4, "va": 0.2, "vp": 6.2, "tend": "estavel"}, {"nome": "Giga Mall", "unidade": "Fortaleza", "interno": false, "h": [11.0, 18.5, 11.5, 21.2, 12.5, 10.0, 7.0, 18.0], "ms": 15.6, "mc": 11.9, "va": -3.7, "vp": -23.7, "tend": "queda"}, {"nome": "Gosto Mineiro", "unidade": "Fortaleza", "interno": false, "h": [25.9, 32.3, 67.1, 39.5, 100.5, 83.0, 81.1, 92.5], "ms": 41.2, "mc": 89.3, "va": 48.1, "vp": 116.7, "tend": "alta"}, {"nome": "Grupo Sampaio", "unidade": "Fortaleza", "interno": false, "h": [26.0, 29.0, 26.5, 38.0, 37.5, 70.4, 64.0, 90.7], "ms": 29.9, "mc": 65.7, "va": 35.8, "vp": 119.7, "tend": "alta"}, {"nome": "Grupo Urbmidia", "unidade": "Fortaleza", "interno": false, "h": [118.5, 113.0, 111.0, 126.0, 105.5, 122.7, 81.0, 79.9], "ms": 117.1, "mc": 97.3, "va": -19.8, "vp": -16.9, "tend": "queda"}, {"nome": "Gvitta - Gestão", "unidade": "Fortaleza", "interno": false, "h": [78.9, 146.2, 126.2, 167.5, 118.2, 91.5, 81.5, 109.3], "ms": 129.7, "mc": 100.1, "va": -29.6, "vp": -22.8, "tend": "queda"}, {"nome": "Gvitta - Mapa de Calor", "unidade": "ACG", "interno": false, "h": [19.6, 22.5, 27.1, 35.7, 45.0, 64.8, 93.5, 66.1], "ms": 26.2, "mc": 67.4, "va": 41.2, "vp": 157.3, "tend": "alta"}, {"nome": "Gvitta - Tecnologia", "unidade": "Fortaleza", "interno": false, "h": [12.2, 10.0, 29.0, 109.8, 36.3, 36.6, 82.6, 142.9], "ms": 40.3, "mc": 74.6, "va": 34.3, "vp": 85.1, "tend": "alta"}, {"nome": "Hospital Veterinário Popular - Gestão", "unidade": "Fortaleza", "interno": false, "h": [18.6, 13.2, 11.0, 28.2, 18.0, 16.0, 11.2, 30.3], "ms": 17.8, "mc": 18.9, "va": 1.1, "vp": 6.2, "tend": "estavel"}, {"nome": "Illa Mare", "unidade": "Fortaleza", "interno": false, "h": [32.0, 46.5, 36.0, 37.5, 51.8, 51.9, 34.0, 118.6], "ms": 38.0, "mc": 64.1, "va": 26.1, "vp": 68.7, "tend": "alta"}, {"nome": "Iselétrica", "unidade": "Fortaleza", "interno": false, "h": [26.3, 53.8, 58.8, 39.0, 55.9, 56.6, 74.1, 69.9], "ms": 44.5, "mc": 64.1, "va": 19.6, "vp": 44.0, "tend": "alta"}, {"nome": "J. Patrício", "unidade": "Fortaleza", "interno": false, "h": [24.5, 43.5, 14.3, 30.5, 18.5, 25.5, 43.5, 23.0], "ms": 28.2, "mc": 27.6, "va": -0.6, "vp": -2.1, "tend": "estavel"}, {"nome": "JMG", "unidade": "São Paulo", "interno": false, "h": [41.0, 39.0, 29.0, 30.8, 29.3, 83.3, 53.2, 166.9], "ms": 35.0, "mc": 83.2, "va": 48.2, "vp": 137.7, "tend": "alta"}, {"nome": "JRA Engenharia - Gestão", "unidade": "Fortaleza", "interno": false, "h": [0.2, 8.1, 5.8, 12.7, 24.2, 12.9, 26.3, 17.3], "ms": 6.7, "mc": 20.2, "va": 13.5, "vp": 201.5, "tend": "alta"}, {"nome": "JW Saraiva - ACG", "unidade": "ACG", "interno": false, "h": [62.8, 89.9, 71.0, 89.7, 45.7, 40.0, 58.1, 77.5], "ms": 78.3, "mc": 55.3, "va": -23.0, "vp": -29.4, "tend": "queda"}, {"nome": "JW Saraiva - PE", "unidade": "Fortaleza", "interno": false, "h": [6.5, 2.0, 7.0, 5.0, 10.5, 15.9, 18.7, 16.0], "ms": 5.1, "mc": 15.3, "va": 10.2, "vp": 200.0, "tend": "alta"}, {"nome": "Karams - Gestão", "unidade": "São Paulo", "interno": false, "h": [59.8, 75.8, 93.5, 122.2, 141.0, 70.2, 106.7, 62.8], "ms": 87.8, "mc": 95.2, "va": 7.4, "vp": 8.4, "tend": "estavel"}, {"nome": "La Maison", "unidade": "Fortaleza", "interno": false, "h": [20.6, 17.8, 22.9, 37.4, 27.4, 34.6, 14.4, 38.2], "ms": 24.6, "mc": 28.7, "va": 4.1, "vp": 16.7, "tend": "alta"}, {"nome": "Leal Queiroz - Gestão", "unidade": "Fortaleza", "interno": false, "h": [17.8, 40.0, 37.0, 29.2, 24.8, 37.5, 53.9, 65.1], "ms": 31.0, "mc": 45.3, "va": 14.3, "vp": 46.1, "tend": "alta"}, {"nome": "Levva - Gestão", "unidade": "São Paulo", "interno": false, "h": [41.0, 32.8, 3.0, 18.5, 40.0, 26.2, 30.0, 65.0], "ms": 23.8, "mc": 40.3, "va": 16.5, "vp": 69.3, "tend": "alta"}, {"nome": "Levva - Processos", "unidade": "São Paulo", "interno": false, "h": [16.5, 20.2, 21.5, 25.2, 15.5, 52.0, 45.5, 18.0], "ms": 20.9, "mc": 32.8, "va": 11.9, "vp": 56.9, "tend": "alta"}, {"nome": "Liebe - Controladoria", "unidade": "Fortaleza", "interno": false, "h": [10.0, 23.0, 25.0, 13.5, 8.0, 36.5, 17.0, 17.5], "ms": 17.9, "mc": 19.8, "va": 1.9, "vp": 10.6, "tend": "estavel"}, {"nome": "Lotérica Aldeota", "unidade": "Fortaleza", "interno": false, "h": [12.0, 17.0, 12.8, 2.5, 12.2, 20.8, 21.2, 24.5], "ms": 11.1, "mc": 19.7, "va": 8.6, "vp": 77.5, "tend": "alta"}, {"nome": "Mahalo - Financeiro", "unidade": "Fortaleza", "interno": false, "h": [4.0, 32.5, 34.5, 40.0, 36.5, 60.0, 81.4, 84.2], "ms": 27.8, "mc": 65.5, "va": 37.7, "vp": 135.6, "tend": "alta"}, {"nome": "Mandala - Gestão", "unidade": "São Paulo", "interno": false, "h": [30.0, 81.8, 64.7, 58.9, 48.6, 70.0, 53.5, 67.5], "ms": 58.8, "mc": 59.9, "va": 1.1, "vp": 1.9, "tend": "estavel"}, {"nome": "Mandala - Planejamento Patrimonial", "unidade": "ACG", "interno": false, "h": [8.4, 15.3, 3.0, 5.8, 2.6, 12.5, 4.5, 21.2], "ms": 8.1, "mc": 10.2, "va": 2.1, "vp": 25.9, "tend": "estavel"}, {"nome": "Mandala - Recuperação de Créditos", "unidade": "ACG", "interno": false, "h": [20.8, 34.1, 19.0, 24.5, 17.8, 13.5, 15.2, 20.8], "ms": 24.6, "mc": 16.8, "va": -7.8, "vp": -31.7, "tend": "queda"}, {"nome": "Matheus Fernandes", "unidade": "Fortaleza", "interno": false, "h": [20.8, 15.5, 44.2, 38.2, 52.0, 30.2, 33.2, 18.9], "ms": 29.7, "mc": 33.6, "va": 3.9, "vp": 13.1, "tend": "alta"}, {"nome": "Matmed", "unidade": "Fortaleza", "interno": false, "h": [35.5, 101.5, 43.5, 51.0, 59.3, 60.2, 55.0, 82.0], "ms": 57.9, "mc": 64.1, "va": 6.2, "vp": 10.7, "tend": "alta"}, {"nome": "Medcenter - ACG Holding", "unidade": "ACG", "interno": false, "h": [8.2, 22.1, 7.2, 18.9, 9.7, 11.7, 15.8, 31.2], "ms": 14.1, "mc": 17.1, "va": 3.0, "vp": 21.3, "tend": "alta"}, {"nome": "Milênio", "unidade": "São Paulo", "interno": false, "h": [67.8, 92.5, 42.0, 77.8, 76.2, 102.2, 97.8, 103.9], "ms": 70.0, "mc": 95.0, "va": 25.0, "vp": 35.7, "tend": "alta"}, {"nome": "Mundo de LED", "unidade": "Fortaleza", "interno": false, "h": [21.2, 18.5, 21.5, 29.5, 41.8, 23.8, 39.8, 34.8], "ms": 22.7, "mc": 35.0, "va": 12.3, "vp": 54.2, "tend": "alta"}, {"nome": "Murano", "unidade": "Fortaleza", "interno": false, "h": [29.1, 7.3, 22.5, 25.0, 19.5, 33.2, 19.0, 22.2], "ms": 21.0, "mc": 23.5, "va": 2.5, "vp": 11.9, "tend": "estavel"}, {"nome": "Newlight - Acompanhamento ACG", "unidade": "ACG", "interno": false, "h": [9.7, 15.3, 22.7, 43.7, 26.9, 25.5, 32.4, 54.1], "ms": 22.9, "mc": 34.7, "va": 11.8, "vp": 51.5, "tend": "alta"}, {"nome": "Newlight - Gestão", "unidade": "Fortaleza", "interno": false, "h": [50.5, 19.1, 12.5, 27.1, 27.8, 32.7, 48.0, 33.8], "ms": 27.3, "mc": 35.6, "va": 8.3, "vp": 30.4, "tend": "alta"}, {"nome": "Nexus - Gerenciador de Checklist", "unidade": "Fortaleza", "interno": true, "h": [4.8, 49.0, 69.9, 105.8, 13.5, 5.0, 28.8, 10.5], "ms": 57.4, "mc": 14.4, "va": -43.0, "vp": -74.9, "tend": "queda"}, {"nome": "Nordeste Cordis", "unidade": "Fortaleza", "interno": false, "h": [8.0, 35.1, 12.7, 11.8, 15.5, 24.7, 24.5, 16.0], "ms": 16.9, "mc": 20.2, "va": 3.3, "vp": 19.5, "tend": "alta"}, {"nome": "Norte Geradores - ACG", "unidade": "ACG", "interno": false, "h": [60.2, 74.4, 56.5, 122.0, 196.2, 187.2, 124.9, 76.4], "ms": 78.3, "mc": 146.2, "va": 67.9, "vp": 86.7, "tend": "alta"}, {"nome": "O Pimentão - Financeiro", "unidade": "Fortaleza", "interno": false, "h": [25.5, 22.0, 29.8, 51.1, 18.5, 65.0, 57.0, 105.0], "ms": 32.1, "mc": 61.4, "va": 29.3, "vp": 91.3, "tend": "alta"}, {"nome": "One Play - Gestão", "unidade": "Fortaleza", "interno": false, "h": [9.0, 19.0, 31.0, 29.0, 35.5, 22.0, 29.5, 31.0], "ms": 22.0, "mc": 29.5, "va": 7.5, "vp": 34.1, "tend": "alta"}, {"nome": "Overlabel - ACG", "unidade": "ACG", "interno": false, "h": [13.7, 8.3, 30.0, 31.7, 36.0, 41.8, 63.8, 36.4], "ms": 20.9, "mc": 44.5, "va": 23.6, "vp": 112.9, "tend": "alta"}, {"nome": "PWR - ACG", "unidade": "Fortaleza", "interno": true, "h": [50.7, 87.9, 65.2, 90.8, 106.0, 116.3, 67.8, 135.4], "ms": 73.7, "mc": 106.4, "va": 32.7, "vp": 44.4, "tend": "alta"}, {"nome": "PWR Gestão", "unidade": "Fortaleza", "interno": true, "h": [1273.9, 1992.5, 1766.1, 2099.0, 2254.1, 2095.0, 2128.0, 2010.1], "ms": 1782.9, "mc": 2121.8, "va": 338.9, "vp": 19.0, "tend": "alta"}, {"nome": "PWR Gestão - Tecnologia e Inovação", "unidade": "Fortaleza", "interno": true, "h": [79.8, 125.2, 99.4, 137.6, 140.1, 117.0, 267.1, 480.7], "ms": 110.5, "mc": 251.2, "va": 140.7, "vp": 127.3, "tend": "alta"}, {"nome": "Pastelaria dos Sonhos - Acompanhamento ACG", "unidade": "ACG", "interno": false, "h": [5.2, 9.2, 13.6, 19.4, 9.5, 20.1, 36.2, 33.2], "ms": 11.9, "mc": 24.8, "va": 12.9, "vp": 108.4, "tend": "alta"}, {"nome": "Pensar Educação", "unidade": "Fortaleza", "interno": false, "h": [42.0, 53.6, 5.5, 44.6, 51.0, 33.6, 59.0, 45.8], "ms": 36.4, "mc": 47.4, "va": 11.0, "vp": 30.2, "tend": "alta"}, {"nome": "Picanha do Jonas", "unidade": "Fortaleza", "interno": false, "h": [25.5, 57.2, 60.5, 71.0, 63.5, 69.8, 91.2, 93.2], "ms": 53.6, "mc": 79.4, "va": 25.8, "vp": 48.1, "tend": "alta"}, {"nome": "Piso Novo - ACG", "unidade": "ACG", "interno": false, "h": [4.2, 3.8, 8.7, 8.0, 12.5, 3.7, 5.9, 24.9], "ms": 6.2, "mc": 11.8, "va": 5.6, "vp": 90.3, "tend": "alta"}, {"nome": "Prime Sol Energia", "unidade": "São Paulo", "interno": false, "h": [6.5, 1.0, 0.8, 4.5, 5.5, 71.0, 24.5, 18.5], "ms": 3.2, "mc": 29.9, "va": 26.7, "vp": 834.4, "tend": "alta"}, {"nome": "Pro Car", "unidade": "Fortaleza", "interno": false, "h": [37.8, 61.5, 25.0, 36.5, 4.5, 10.2, 12.0, 34.5], "ms": 40.2, "mc": 15.3, "va": -24.9, "vp": -61.9, "tend": "queda"}, {"nome": "Pro Car - Comercial", "unidade": "Fortaleza", "interno": false, "h": [80.2, 86.0, 49.8, 76.0, 62.8, 56.0, 46.5, 42.7], "ms": 73.0, "mc": 52.0, "va": -21.0, "vp": -28.8, "tend": "queda"}, {"nome": "Pronutrir - ACG", "unidade": "ACG", "interno": false, "h": [8.8, 70.5, 29.6, 28.4, 38.7, 25.4, 61.2, 43.0], "ms": 34.3, "mc": 42.1, "va": 7.8, "vp": 22.7, "tend": "alta"}, {"nome": "R. Invest - Financeiro", "unidade": "São Paulo", "interno": false, "h": [42.6, 38.5, 37.8, 40.8, 82.7, 46.1, 37.5, 44.2], "ms": 39.9, "mc": 52.6, "va": 12.7, "vp": 31.8, "tend": "alta"}, {"nome": "S&M Distribuidora", "unidade": "Fortaleza", "interno": false, "h": [25.0, 9.2, 18.0, 4.5, 12.0, 20.8, 41.2, 29.2], "ms": 14.2, "mc": 25.8, "va": 11.6, "vp": 81.7, "tend": "alta"}, {"nome": "San Paolo", "unidade": "Fortaleza", "interno": false, "h": [7.0, 72.5, 34.2, 19.2, 39.5, 39.9, 23.0, 33.5], "ms": 33.2, "mc": 34.0, "va": 0.8, "vp": 2.4, "tend": "estavel"}, {"nome": "Santa Praia", "unidade": "Fortaleza", "interno": false, "h": [43.1, 48.0, 43.9, 64.8, 55.2, 52.3, 33.2, 56.2], "ms": 49.9, "mc": 49.2, "va": -0.7, "vp": -1.4, "tend": "estavel"}, {"nome": "Santa Rafaela - Acompanhamento ACG", "unidade": "ACG", "interno": false, "h": [23.6, 18.3, 30.0, 9.6, 23.5, 15.3, 36.6, 32.9], "ms": 20.4, "mc": 27.1, "va": 6.7, "vp": 32.8, "tend": "alta"}, {"nome": "Serra Tubos", "unidade": "Fortaleza", "interno": false, "h": [76.5, 3.0, 2.0, 2.0, 15.5, 46.5, 30.5, 26.2], "ms": 20.9, "mc": 29.7, "va": 8.8, "vp": 42.1, "tend": "alta"}, {"nome": "Seteg - ACG", "unidade": "ACG", "interno": false, "h": [15.3, 20.4, 8.9, 22.1, 18.2, 18.1, 17.0, 15.4], "ms": 16.7, "mc": 17.2, "va": 0.5, "vp": 3.0, "tend": "estavel"}, {"nome": "Sorveteria Juarez - FORMER", "unidade": "Fortaleza", "interno": false, "h": [9.0, 0.5, 12.5, 31.0, 25.9, 22.8, 41.2, 36.2], "ms": 13.2, "mc": 31.6, "va": 18.4, "vp": 139.4, "tend": "alta"}, {"nome": "São Camilo", "unidade": "Fortaleza", "interno": false, "h": [12.5, 17.0, 16.0, 15.0, 51.5, 39.0, 47.6, 52.0], "ms": 15.1, "mc": 47.5, "va": 32.4, "vp": 214.6, "tend": "alta"}, {"nome": "Teles e Falchi", "unidade": "Fortaleza", "interno": false, "h": [4.0, 12.5, 6.5, 2.5, 17.5, 23.8, 21.0, 53.2], "ms": 6.4, "mc": 28.9, "va": 22.5, "vp": 351.6, "tend": "alta"}, {"nome": "Transnacional", "unidade": "Fortaleza", "interno": false, "h": [9.0, 14.0, 9.0, 2.0, 6.0, 7.0, 9.5, 12.0], "ms": 8.5, "mc": 8.6, "va": 0.1, "vp": 1.2, "tend": "estavel"}, {"nome": "Tubocone", "unidade": "Fortaleza", "interno": false, "h": [124.8, 143.3, 116.8, 184.0, 162.8, 155.0, 135.7, 133.8], "ms": 142.2, "mc": 146.8, "va": 4.6, "vp": 3.2, "tend": "estavel"}, {"nome": "Tubocone - SIG", "unidade": "Fortaleza", "interno": false, "h": [174.4, 136.7, 84.5, 89.9, 138.4, 170.1, 89.3, 5.2], "ms": 121.4, "mc": 100.8, "va": -20.6, "vp": -17.0, "tend": "queda"}, {"nome": "Tânia Joias - Estruturação", "unidade": "Fortaleza", "interno": false, "h": [7.5, 18.0, 17.0, 26.8, 43.5, 41.7, 30.8, 66.7], "ms": 17.3, "mc": 45.7, "va": 28.4, "vp": 164.2, "tend": "alta"}, {"nome": "VM Empreendimentos", "unidade": "Fortaleza", "interno": false, "h": [11.5, 3.5, 10.5, 38.2, 25.5, 59.5, 61.9, 133.2], "ms": 15.9, "mc": 70.0, "va": 54.1, "vp": 340.3, "tend": "alta"}, {"nome": "VOKERÊ App - Controladoria", "unidade": "Fortaleza", "interno": false, "h": [6.0, 19.0, 32.0, 19.0, 28.0, 9.5, 19.0, 17.5], "ms": 19.0, "mc": 18.5, "va": -0.5, "vp": -2.6, "tend": "estavel"}, {"nome": "Vale Milk", "unidade": "Fortaleza", "interno": false, "h": [41.5, 29.0, 36.5, 70.5, 51.3, 27.6, 46.1, 81.4], "ms": 44.4, "mc": 51.6, "va": 7.2, "vp": 16.2, "tend": "alta"}, {"nome": "Vignoli", "unidade": "Fortaleza", "interno": false, "h": [145.2, 165.0, 222.9, 169.8, 304.8, 298.0, 293.5, 360.0], "ms": 175.7, "mc": 314.1, "va": 138.4, "vp": 78.8, "tend": "alta"}, {"nome": "WHG / ISPCORP", "unidade": "Fortaleza", "interno": false, "h": [25.6, 48.8, 15.0, 25.6, 49.0, 58.6, 49.8, 16.5], "ms": 28.7, "mc": 43.5, "va": 14.8, "vp": 51.6, "tend": "alta"}, {"nome": "YOOU Group - Partnership", "unidade": "ACG", "interno": false, "h": [14.7, 37.6, 11.4, 16.5, 14.1, 30.5, 21.4, 33.5], "ms": 20.0, "mc": 24.9, "va": 4.9, "vp": 24.5, "tend": "alta"}, {"nome": "Yozenn", "unidade": "Fortaleza", "interno": false, "h": [41.3, 40.8, 37.8, 41.8, 19.5, 32.0, 44.2, 44.8], "ms": 40.4, "mc": 35.1, "va": -5.3, "vp": -13.1, "tend": "queda"}, {"nome": "Óticas Diniz - Cariri", "unidade": "Fortaleza", "interno": false, "h": [5.0, 15.5, 4.0, 10.0, 25.5, 15.5, 20.0, 37.5], "ms": 8.6, "mc": 24.6, "va": 16.0, "vp": 186.0, "tend": "alta"}, {"nome": "Óticas Marília - Acompanhamento ACG", "unidade": "ACG", "interno": false, "h": [13.3, 13.0, 10.6, 15.3, 3.4, 8.0, 12.0, 32.0], "ms": 13.1, "mc": 13.9, "va": 0.8, "vp": 6.1, "tend": "estavel"}];
+
+const MESES = ["Dez","Jan","Fev","Mar","Abr","Mai","Jun","Jul"];
+const N_SEM_IA = 4;
+
+function fmt1(v){ return (v===null||v===undefined||isNaN(v)) ? "—" : v.toLocaleString('pt-BR',{minimumFractionDigits:1,maximumFractionDigits:1}); }
+function fmtPct(v){ if(v===null||v===undefined||isNaN(v)) return "—"; const s = v>0?"+":""; return s + v.toLocaleString('pt-BR',{minimumFractionDigits:1,maximumFractionDigits:1}) + "%"; }
+
+function sparkline(rec, splitIdx){
+  const vals = rec.h.filter(v=>v!==null && v!==undefined);
+  const max = vals.length ? Math.max(...vals) : 1;
+  return '<div class="spark">' + rec.h.map((v,i)=>{
+    if(v===null || v===undefined) return '<i class="na" style="height:2px" title="'+MESES[i]+': sem débito"></i>';
+    const h = Math.max(2, (v/max)*26);
+    const cls = i<splitIdx ? 'pre' : 'post';
+    return `<i class="${cls}" style="height:${h}px" title="${MESES[i]}: ${fmt1(v)}h"></i>`;
+  }).join('') + '</div>';
+}
+
+function badgeTend(vp, va, tend){
+  if(tend === 'queda') return `<span class="badge down">▼ ${fmtPct(vp)}</span>`;
+  if(tend === 'alta') return `<span class="badge up">▲ ${fmtPct(vp)}</span>`;
+  return `<span class="badge flat">${fmtPct(vp)}</span>`;
+}
+
+function drawChart(elId, rows){
+  const el = document.getElementById(elId);
+  const W = 1000, H = 220, padL = 44, padR = 20, padT = 24, padB = 30;
+  const plotW = W - padL - padR, plotH = H - padT - padB;
+  const n = MESES.length;
+
+  const totals = MESES.map((_,i) => rows.reduce((s,r) => s + (r.h[i]||0), 0));
+  const maxT = Math.max(...totals) * 1.15 || 1;
+
+  let points = [], labels = '';
+  for(let i=0;i<n;i++){
+    const cx = padL + (plotW/n) * (i+0.5);
+    const ty = padT + plotH - (totals[i]/maxT) * plotH;
+    points.push([cx, ty]);
+    labels += `<text x="${cx}" y="${H-8}" text-anchor="middle" font-size="11.5" fill="var(--ink-mute)" font-family="Plus Jakarta Sans, sans-serif">${MESES[i]}</text>`;
+  }
+  const marcoX = padL + (plotW/n) * N_SEM_IA;
+  const marco = `<line x1="${marcoX}" y1="${padT}" x2="${marcoX}" y2="${padT+plotH}" stroke="var(--accent)" stroke-width="1.4" stroke-dasharray="4 4" opacity="0.55"></line>
+    <text x="${marcoX+4}" y="${padT+11}" font-size="10" fill="var(--accent)" font-family="Plus Jakarta Sans, sans-serif" font-weight="600">IA</text>`;
+  let segs = '';
+  for(let i=0;i<points.length-1;i++){
+    const color = i<N_SEM_IA-1 ? 'var(--brand-light)' : 'var(--accent)';
+    segs += `<line x1="${points[i][0]}" y1="${points[i][1]}" x2="${points[i+1][0]}" y2="${points[i+1][1]}" stroke="${color}" stroke-width="2.5" stroke-linecap="round"></line>`;
+  }
+  let dots = points.map((p,i)=>`<circle cx="${p[0]}" cy="${p[1]}" r="4" fill="${i<N_SEM_IA?'var(--brand-light)':'var(--accent)'}" stroke="var(--surface)" stroke-width="1.5"></circle>
+    <text x="${p[0]}" y="${p[1]-10}" text-anchor="middle" font-size="10.5" font-weight="700" fill="${i<N_SEM_IA?'var(--brand-mid)':'var(--accent)'}" font-family="IBM Plex Mono, monospace">${Math.round(totals[i]).toLocaleString('pt-BR')}</text>`).join('');
+  el.innerHTML = `<svg viewBox="0 0 ${W} ${H}" style="width:100%;height:auto;display:block;">${marco}${segs}${dots}${labels}</svg>`;
+}
+
+/* ===================== TABS ===================== */
+document.querySelectorAll('.tabbtn').forEach(btn=>{
+  btn.addEventListener('click', function(){
+    document.querySelectorAll('.tabbtn').forEach(b=>b.classList.remove('active'));
+    document.querySelectorAll('.panel').forEach(p=>p.classList.remove('active'));
+    this.classList.add('active');
+    document.getElementById('panel-' + this.dataset.tab).classList.add('active');
+  });
+});
+
+/* ===================== PAINEL GERAL ===================== */
+(function(){
+  let sortKey = 'nome', sortDir = 1, query = '';
+  function render(){
+    const q = query.trim().toLowerCase();
+    let rows = DATA_GERAL.filter(r => !q || r.nome.toLowerCase().includes(q) || (r.cargo||'').toLowerCase().includes(q));
+    rows.sort((a,b)=>{
+      let av = a[sortKey], bv = b[sortKey];
+      if(av===null||av===undefined) av = (typeof bv==='number') ? -Infinity : '';
+      if(bv===null||bv===undefined) bv = (typeof av==='number') ? -Infinity : '';
+      if(typeof av === 'string') return av.localeCompare(bv,'pt-BR') * sortDir;
+      return (av-bv) * sortDir;
+    });
+    document.getElementById('count-geral').textContent = rows.length + ' de ' + DATA_GERAL.length + ' consultores';
+    document.getElementById('tbody-geral').innerHTML = rows.map(r => `
+      <tr>
+        <td class="name">${r.nome}</td>
+        <td class="cargo">${r.cargo || '<span class="muted">—</span>'}</td>
+        <td>${sparkline(r, N_SEM_IA)}</td>
+        <td class="num">${fmt1(r.ms)}</td>
+        <td class="num">${fmt1(r.mc)}</td>
+        <td class="num">${badgeTend(r.vp, r.va, Math.abs(r.va||0)<1 ? 'estavel' : (r.va>0?'alta':'queda'))}</td>
+      </tr>`).join('');
+    document.querySelectorAll('#tbl-geral thead th[data-k]').forEach(th=>th.classList.toggle('sorted', th.dataset.k===sortKey));
+  }
+  document.getElementById('search-geral').addEventListener('input', e=>{ query = e.target.value; render(); });
+  document.querySelectorAll('#tbl-geral thead th[data-k]').forEach(th=>{
+    th.addEventListener('click', ()=>{
+      const k = th.dataset.k;
+      if(sortKey === k){ sortDir *= -1; } else { sortKey = k; sortDir = (k==='nome'||k==='cargo') ? 1 : -1; }
+      render();
+    });
+  });
+  render();
+})();
+
+/* ===================== PAINEL PROJETOS X CONSULTOR ===================== */
+(function(){
+  let internoFiltro = 'nao', unidadeFiltro = 'todos', tendFiltro = 'todos', query = '';
+  let sortKey = 'vp', sortDir = 1;
+
+  function baseFiltrado(){
+    return DATA_CXP.filter(r => {
+      if(internoFiltro === 'nao' && r.interno) return false;
+      if(internoFiltro === 'sim' && !r.interno) return false;
+      if(unidadeFiltro !== 'todos' && r.unidade !== unidadeFiltro) return false;
+      return true;
+    });
+  }
+
+  function render(){
+    const filt = baseFiltrado();
+    document.getElementById('kpiT-cxp').textContent = filt.length;
+    document.getElementById('kpiQ-cxp').textContent = filt.filter(r=>r.tend==='queda').length;
+    document.getElementById('kpiA-cxp').textContent = filt.filter(r=>r.tend!=='queda').length;
+    document.getElementById('kpiC-cxp').textContent = new Set(filt.map(r=>r.cons)).size;
+    document.getElementById('kpiP-cxp').textContent = new Set(filt.map(r=>r.proj)).size;
+    document.getElementById('chartSub-cxp').textContent = `Soma mensal de ${filt.length} pares` +
+      (internoFiltro==='nao' ? ' (só projeto externo/cliente)' : internoFiltro==='sim' ? ' (só projeto interno)' : ' (interno + externo)') +
+      (unidadeFiltro!=='todos' ? `, unidade ${unidadeFiltro}.` : '.');
+    drawChart('chart-cxp', filt);
+
+    const q = query.trim().toLowerCase();
+    let rows = filt.filter(r => {
+      if(tendFiltro !== 'todos' && r.tend !== tendFiltro) return false;
+      if(!q) return true;
+      return r.cons.toLowerCase().includes(q) || r.proj.toLowerCase().includes(q);
+    });
+    rows.sort((a,b)=>{
+      let av = a[sortKey], bv = b[sortKey];
+      if(sortKey === 'interno'){ av = av?1:0; bv = bv?1:0; }
+      if(av===null||av===undefined) av = (typeof bv==='number') ? -Infinity : '';
+      if(bv===null||bv===undefined) bv = (typeof av==='number') ? -Infinity : '';
+      if(typeof av === 'string') return av.localeCompare(bv,'pt-BR') * sortDir;
+      return (av-bv) * sortDir;
+    });
+    document.getElementById('countPill-cxp').textContent = rows.length + ' de ' + filt.length + ' pares';
+    document.getElementById('tbody-cxp').innerHTML = rows.map(r => `
+      <tr>
+        <td class="name">${r.cons}</td>
+        <td class="proj">${r.proj}</td>
+        <td class="cargo">${r.cargo || '<span class="muted">—</span>'}</td>
+        <td>${r.unidade ? `<span class="tag-unidade">${r.unidade}</span>` : '<span class="muted">—</span>'}</td>
+        <td>${r.interno ? '<span class="tag-pill">Sim</span>' : '<span class="muted">Não</span>'}</td>
+        <td>${sparkline(r, N_SEM_IA)}</td>
+        <td class="num">${fmt1(r.ms)}</td>
+        <td class="num">${fmt1(r.mc)}</td>
+        <td class="num">${badgeTend(r.vp, r.va, r.tend)}</td>
+      </tr>`).join('');
+    document.querySelectorAll('#tbl-cxp thead th[data-k]').forEach(th=>th.classList.toggle('sorted', th.dataset.k===sortKey));
+  }
+
+  document.getElementById('search-cxp').addEventListener('input', e=>{ query = e.target.value; render(); });
+  document.querySelectorAll('#filtroInterno-cxp button').forEach(btn=>{
+    btn.addEventListener('click', function(){
+      internoFiltro = this.dataset.v;
+      document.querySelectorAll('#filtroInterno-cxp button').forEach(b=>b.classList.remove('active'));
+      this.classList.add('active'); render();
+    });
+  });
+  document.querySelectorAll('#filtroUnidade-cxp button').forEach(btn=>{
+    btn.addEventListener('click', function(){
+      unidadeFiltro = this.dataset.v;
+      document.querySelectorAll('#filtroUnidade-cxp button').forEach(b=>b.classList.remove('active'));
+      this.classList.add('active'); render();
+    });
+  });
+  document.querySelectorAll('#filtroTend-cxp button').forEach(btn=>{
+    btn.addEventListener('click', function(){
+      tendFiltro = this.dataset.v;
+      document.querySelectorAll('#filtroTend-cxp button').forEach(b=>b.classList.remove('active'));
+      this.classList.add('active'); render();
+    });
+  });
+  document.querySelectorAll('#tbl-cxp thead th[data-k]').forEach(th=>{
+    th.addEventListener('click', ()=>{
+      const k = th.dataset.k;
+      if(sortKey === k){ sortDir *= -1; } else { sortKey = k; sortDir = ['cons','proj','cargo','unidade','interno'].includes(k) ? 1 : -1; }
+      render();
+    });
+  });
+  render();
+})();
+
+/* ===================== PAINEL PROJETOS ===================== */
+(function(){
+  let internoFiltro = 'nao', unidadeFiltro = 'todos', tendFiltro = 'todos', query = '';
+  let sortKey = 'vp', sortDir = 1;
+
+  function baseFiltrado(){
+    return DATA_PROJ.filter(r => {
+      if(internoFiltro === 'nao' && r.interno) return false;
+      if(internoFiltro === 'sim' && !r.interno) return false;
+      if(unidadeFiltro !== 'todos' && r.unidade !== unidadeFiltro) return false;
+      return true;
+    });
+  }
+
+  function render(){
+    const filt = baseFiltrado();
+    document.getElementById('kpiT-proj').textContent = filt.length;
+    document.getElementById('kpiQ-proj').textContent = filt.filter(r=>r.tend==='queda').length;
+    document.getElementById('kpiA-proj').textContent = filt.filter(r=>r.tend!=='queda').length;
+
+    const totalsAll = MESES.map((_,i) => filt.reduce((s,r) => s + (r.h[i]||0), 0));
+    const semT = totalsAll.slice(0,4).reduce((a,b)=>a+b,0)/4;
+    const comT = totalsAll.slice(4).reduce((a,b)=>a+b,0)/4;
+    const varPct = semT ? (comT/semT-1)*100 : null;
+    document.getElementById('kpiV-proj').innerHTML = fmtPct(varPct===null?null:Math.round(varPct*10)/10) + '<span class="unit"></span>';
+
+    document.getElementById('chartSub-proj').textContent = `Soma mensal de ${filt.length} projetos` +
+      (internoFiltro==='nao' ? ' (só externos/cliente)' : internoFiltro==='sim' ? ' (só internos)' : ' (interno + externo)') +
+      (unidadeFiltro!=='todos' ? `, unidade ${unidadeFiltro}.` : '.');
+    drawChart('chart-proj', filt);
+
+    const q = query.trim().toLowerCase();
+    let rows = filt.filter(r => {
+      if(tendFiltro !== 'todos' && r.tend !== tendFiltro) return false;
+      if(!q) return true;
+      return r.nome.toLowerCase().includes(q);
+    });
+    rows.sort((a,b)=>{
+      let av = a[sortKey], bv = b[sortKey];
+      if(sortKey === 'interno'){ av = av?1:0; bv = bv?1:0; }
+      if(av===null||av===undefined) av = (typeof bv==='number') ? -Infinity : '';
+      if(bv===null||bv===undefined) bv = (typeof av==='number') ? -Infinity : '';
+      if(typeof av === 'string') return av.localeCompare(bv,'pt-BR') * sortDir;
+      return (av-bv) * sortDir;
+    });
+    document.getElementById('countPill-proj').textContent = rows.length + ' de ' + filt.length + ' projetos';
+    document.getElementById('tbody-proj').innerHTML = rows.map(r => `
+      <tr>
+        <td class="name">${r.nome}</td>
+        <td>${r.unidade ? `<span class="tag-unidade">${r.unidade}</span>` : '<span class="muted">—</span>'}</td>
+        <td>${r.interno ? '<span class="tag-pill">Sim</span>' : '<span class="muted">Não</span>'}</td>
+        <td>${sparkline(r, N_SEM_IA)}</td>
+        <td class="num">${fmt1(r.ms)}</td>
+        <td class="num">${fmt1(r.mc)}</td>
+        <td class="num">${badgeTend(r.vp, r.va, r.tend)}</td>
+      </tr>`).join('');
+    document.querySelectorAll('#tbl-proj thead th[data-k]').forEach(th=>th.classList.toggle('sorted', th.dataset.k===sortKey));
+  }
+
+  document.getElementById('search-proj').addEventListener('input', e=>{ query = e.target.value; render(); });
+  document.querySelectorAll('#filtroInterno-proj button').forEach(btn=>{
+    btn.addEventListener('click', function(){
+      internoFiltro = this.dataset.v;
+      document.querySelectorAll('#filtroInterno-proj button').forEach(b=>b.classList.remove('active'));
+      this.classList.add('active'); render();
+    });
+  });
+  document.querySelectorAll('#filtroUnidade-proj button').forEach(btn=>{
+    btn.addEventListener('click', function(){
+      unidadeFiltro = this.dataset.v;
+      document.querySelectorAll('#filtroUnidade-proj button').forEach(b=>b.classList.remove('active'));
+      this.classList.add('active'); render();
+    });
+  });
+  document.querySelectorAll('#filtroTend-proj button').forEach(btn=>{
+    btn.addEventListener('click', function(){
+      tendFiltro = this.dataset.v;
+      document.querySelectorAll('#filtroTend-proj button').forEach(b=>b.classList.remove('active'));
+      this.classList.add('active'); render();
+    });
+  });
+  document.querySelectorAll('#tbl-proj thead th[data-k]').forEach(th=>{
+    th.addEventListener('click', ()=>{
+      const k = th.dataset.k;
+      if(sortKey === k){ sortDir *= -1; } else { sortKey = k; sortDir = ['nome','unidade','interno'].includes(k) ? 1 : -1; }
+      render();
+    });
+  });
+  render();
+})();
+</script>
