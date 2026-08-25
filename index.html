@@ -521,18 +521,21 @@ function sparkline(rec, splitIdx){
 }
 
 function badgeTend(vp, va, tend){
+  // Visual sempre igual pro mesmo sinal (seta + cor por vp), independente de bater os dois
+  // pisos (10%% e 3h/mes) — essa classificacao (tend: queda/alta/estavel) continua valendo
+  // por baixo dos panos pros filtros de Tendencia e Otimizando, só não muda mais o badge.
   const deltaH = (va===null||va===undefined) ? '—' : (va>0?'+':'') + fmt1(va) + 'h/mês';
-  if(tend === 'queda'){
-    const tip = `Queda: ${fmtPct(vp)} e ${deltaH} — passa dos dois pisos (≤-10% e ≤-3h/mês)`;
-    return `<span class="badge down" title="${tip}">▼ ${fmtPct(vp)}</span>`;
+  const tendLabel = tend === 'queda' ? 'Queda (passa dos dois pisos: ≤-10% e ≤-3h/mês)'
+    : tend === 'alta' ? 'Alta (passa dos dois pisos: ≥+10% e ≥+3h/mês)'
+    : 'Estável (não passa dos dois pisos juntos: 10% de variação E 3h/mês de diferença)';
+  const tip = `${fmtPct(vp)} e ${deltaH} — ${tendLabel}`;
+  if(vp === null || vp === undefined || isNaN(vp) || Math.abs(vp) < 0.05){
+    return `<span class="badge flat" title="${tip}">${fmtPct(vp)}</span>`;
   }
-  if(tend === 'alta'){
-    const tip = `Alta: ${fmtPct(vp)} e ${deltaH} — passa dos dois pisos (≥+10% e ≥+3h/mês)`;
+  if(vp > 0){
     return `<span class="badge up" title="${tip}">▲ ${fmtPct(vp)}</span>`;
   }
-  const tip = `Estável: ${fmtPct(vp)} e ${deltaH} — não passa dos dois pisos juntos (10% de variação `
-    + `E 3h/mês de diferença), mesmo quando o % sozinho parece grande`;
-  return `<span class="badge flat" title="${tip}">${fmtPct(vp)}</span>`;
+  return `<span class="badge down" title="${tip}">▼ ${fmtPct(vp)}</span>`;
 }
 
 function drawChart(elId, rows){
