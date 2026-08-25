@@ -185,10 +185,9 @@
       <h2>O ganho agregado é sobretudo headcount, não produtividade por pessoa</h2>
       <p>O total de horas debitadas cresceu <strong>42,0%</strong> de Dez–Mar para Abr–Jul, mas o número de
       consultores lançando horas no mês <strong>também</strong> subiu de 52 para 88 — crescimento de equipe de 69%
-      no mesmo período. Isolando só quem esteve presente nos 8 meses e está ativo hoje (42 pessoas — 3 removidas por
-      não constarem mais na aba Usuários, provável desligamento), o ganho real por consultor foi de <strong>apenas
-      7,0%</strong>, com ocupação média caindo levemente. Não é um movimento uniforme: 31 subiram, 10 caíram, 1
-      estável.</p>
+      no mesmo período. Olhando só os 42 consultores ativos presentes o período inteiro (mesma base de gente nos 8
+      meses), o ganho real por pessoa foi de <strong>apenas 7,0%</strong>, com ocupação média caindo levemente. Não
+      é um movimento uniforme: 31 subiram, 10 caíram, 1 estável.</p>
       <p>Esta base não registra quem de fato usa IA no dia a dia, então mesmo o +7,0% não pode ser atribuído à IA
       com confiança. Trate o +42,0% agregado como não representativo de ganho de IA, e o +7,0% controlado como teto
       superior otimista.</p>
@@ -261,10 +260,11 @@
     <div class="callout">
       <div class="tag">Leitura</div>
       <h2>Na ponta consultor×projeto, queda e alta ficam parecidas em tamanho</h2>
-      <p>Removendo projetos que a base de débito ainda mostrava rodando mas que já estão Inativos/Stand By no
-      contrato SPWR (ex.: Cavicon), e olhando por combinação específica (uma pessoa, um projeto): o quadro
-      fica bem mais equilibrado do que a leitura agregada por projeto sugeria — sinal de que dentro do mesmo
-      projeto, consultores diferentes seguem trajetórias opostas que se cancelam quando tudo é somado junto.</p>
+      <p>Olhando por combinação específica (uma pessoa, um projeto), o quadro é bem mais equilibrado do que a
+      leitura agregada por projeto sugere: <strong>36 pares em queda</strong> contra <strong>42 em alta</strong> e
+      <strong>55 estáveis</strong>. Sinal de que, dentro do mesmo projeto, consultores diferentes seguem
+      trajetórias opostas que se cancelam quando o total é somado só por projeto — a alta de um cobre a queda de
+      outro na mesma conta.</p>
       <p>Pré-filtrado sem projetos internos (PWR, ACG etc.) — use "Projeto interno" pra incluir de volta.</p>
     </div>
 
@@ -363,17 +363,17 @@
 
     <div class="callout">
       <div class="tag">Leitura</div>
-      <h2>Depois de tirar projetos já inativos no contrato, a alta domina — mas concentrada</h2>
-      <p>Cruzando só com a base de Contratos em <strong>Bases SPWR</strong> (fonte oficial de status), 19 dos 148
-      projetos que a base de débito mostrava ativos já estavam <strong>Inativos ou Stand By</strong> no contrato —
-      entre eles <strong>Cavicon - Gestão</strong>, que antes aparecia como maior queda: era um projeto sendo
-      encerrado, não perda de produtividade. (Correção: <strong>Austin</strong> tinha entrado nessa lista por um bug
-      de deduplicação — a base tem 3 linhas pra Austin, uma Ativa e duas Inativas de contratos antigos, e a
-      extração original ficou com a última linha em vez de priorizar a Ativa. Corrigido — Austin está de volta como
-      Ativo.) Removidos os 19 realmente inativos, o total mensal (só externos) subiu <strong>+36,3%</strong> de
-      Dez-Mar pra Abr-Jul, com <strong>78 projetos em alta</strong> contra <strong>19 em queda</strong>.</p>
-      <p>Pré-filtrado sem projetos internos — use "Projeto interno" pra incluir de volta. Coluna Unidade mostra
-      Fortaleza/ACG/São Paulo (fonte: Contratos, Bases SPWR).</p>
+      <h2>Alta ampla, mas puxada por poucas contas com salto muito grande</h2>
+      <p>Entre os 119 projetos de cliente ativos o período inteiro, a alta domina: <strong>78 projetos subiram</strong>
+      contra <strong>19 em queda</strong>, e o total mensal foi de ~4.430h para ~6.037h — <strong>+36,3%</strong> de
+      Dez-Mar pra Abr-Jul. Mas boa parte do ganho está concentrada em pouquíssimas contas: só <strong>CAUP</strong>
+      (somando as frentes ACG e Tech) já responde por mais de +270h/mês, e <strong>Vignoli</strong> sozinha soma
+      outras +138h — as duas maiores altas isoladas cobrem quase um terço do crescimento total do grupo. Do lado das
+      quedas, <strong>Austin</strong> (-49,4h) e <strong>Gvitta - Gestão</strong> (-29,6h), as duas em Fortaleza,
+      lideram com folga.</p>
+      <p>Vale ler esse crescimento como puxado por um punhado de clientes que expandiram escopo, não como um ganho
+      distribuído de produtividade pela carteira inteira. Pré-filtrado sem projetos internos — use "Projeto
+      interno" pra incluir de volta. Coluna Unidade mostra Fortaleza/ACG/São Paulo (fonte: Contratos, Bases SPWR).</p>
     </div>
 
     <div class="card">
