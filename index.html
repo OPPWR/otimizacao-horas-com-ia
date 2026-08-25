@@ -341,7 +341,7 @@
           <button data-v="ACG">ACG</button>
           <button data-v="São Paulo">SP</button>
         </div>
-        <span class="filter-label">Tendência</span>
+        <span class="filter-label">Tendência do par</span>
         <div class="segmented" id="filtroTend-cxp">
           <button data-v="todos" class="active">Todos</button>
           <button data-v="queda">Queda</button>
@@ -349,6 +349,14 @@
           <button data-v="alta">Alta</button>
         </div>
         <span class="count-pill" id="countPill-cxp"></span>
+      </div>
+      <div class="controls">
+        <span class="filter-label">Consultor está…</span>
+        <div class="segmented" id="filtroOtimiza-cxp">
+          <button data-v="todos" class="active">Todos</button>
+          <button data-v="otimizando">▼ Otimizando horas desde a IA</button>
+          <button data-v="nao">▲ Não otimizando desde a IA</button>
+        </div>
       </div>
 
       <div id="consultorResumo-cxp"></div>
@@ -513,9 +521,18 @@ function sparkline(rec, splitIdx){
 }
 
 function badgeTend(vp, va, tend){
-  if(tend === 'queda') return `<span class="badge down">▼ ${fmtPct(vp)}</span>`;
-  if(tend === 'alta') return `<span class="badge up">▲ ${fmtPct(vp)}</span>`;
-  return `<span class="badge flat">${fmtPct(vp)}</span>`;
+  const deltaH = (va===null||va===undefined) ? '—' : (va>0?'+':'') + fmt1(va) + 'h/mês';
+  if(tend === 'queda'){
+    const tip = `Queda: ${fmtPct(vp)} e ${deltaH} — passa dos dois pisos (≤-10% e ≤-3h/mês)`;
+    return `<span class="badge down" title="${tip}">▼ ${fmtPct(vp)}</span>`;
+  }
+  if(tend === 'alta'){
+    const tip = `Alta: ${fmtPct(vp)} e ${deltaH} — passa dos dois pisos (≥+10% e ≥+3h/mês)`;
+    return `<span class="badge up" title="${tip}">▲ ${fmtPct(vp)}</span>`;
+  }
+  const tip = `Estável: ${fmtPct(vp)} e ${deltaH} — não passa dos dois pisos juntos (10% de variação `
+    + `E 3h/mês de diferença), mesmo quando o % sozinho parece grande`;
+  return `<span class="badge flat" title="${tip}">${fmtPct(vp)}</span>`;
 }
 
 function drawChart(elId, rows){
@@ -602,7 +619,7 @@ document.querySelectorAll('.tabbtn').forEach(btn=>{
 
 /* ===================== PAINEL PROJETOS X CONSULTOR ===================== */
 (function(){
-  let internoFiltro = 'nao', unidadeFiltro = 'todos', tendFiltro = 'todos', consultorFiltro = 'todos', query = '';
+  let internoFiltro = 'nao', unidadeFiltro = 'todos', tendFiltro = 'todos', consultorFiltro = 'todos', otimizaFiltro = 'todos', query = '';
   let sortKey = 'cons', sortDir = 1;
 
   function baseFiltrado(){
@@ -614,9 +631,39 @@ document.querySelectorAll('.tabbtn').forEach(btn=>{
     });
   }
 
-  function atualizaDropdownConsultor(filt){
+  // Agrega por consultor (soma de horas nos pares filtrados por Interno/Unidade) pra classificar
+  // cada pessoa como "otimizando" (caiu ≥10%/≥3h) ou "nao" (subiu ou ficou estavel).
+  function aggregaPorConsultor(filt){
+    const map = {};
+    filt.forEach(r=>{
+      if(!map[r.cons]) map[r.cons] = {sem:0, com:0};
+      map[r.cons].sem += (r.ms||0);
+      map[r.cons].com += (r.mc||0);
+    });
+    Object.keys(map).forEach(c=>{
+      const m = map[c];
+      m.va = m.com - m.sem;
+      m.vp = m.sem ? (m.com/m.sem-1)*100 : null;
+      m.bucket = (m.vp!==null && m.vp<=-10 && m.va<=-3) ? 'otimizando' : 'nao';
+    });
+    return map;
+  }
+
+  function atualizaBotoesOtimiza(aggMap){
+    const nOt = Object.values(aggMap).filter(m=>m.bucket==='otimizando').length;
+    const nNao = Object.values(aggMap).filter(m=>m.bucket==='nao').length;
+    const box = document.getElementById('filtroOtimiza-cxp');
+    box.querySelector('[data-v="otimizando"]').textContent = `▼ Otimizando horas desde a IA (${nOt})`;
+    box.querySelector('[data-v="nao"]').textContent = `▲ Não otimizando desde a IA (${nNao})`;
+  }
+
+  function atualizaDropdownConsultor(filt, aggMap){
     const sel = document.getElementById('filtroConsultor-cxp');
-    const nomes = Array.from(new Set(filt.map(r=>r.cons))).sort((a,b)=>a.localeCompare(b,'pt-BR'));
+    let nomes = Array.from(new Set(filt.map(r=>r.cons)));
+    if(otimizaFiltro !== 'todos'){
+      nomes = nomes.filter(n => aggMap[n] && aggMap[n].bucket === otimizaFiltro);
+    }
+    nomes = nomes.sort((a,b)=>a.localeCompare(b,'pt-BR'));
     const atual = consultorFiltro;
     sel.innerHTML = '<option value="todos">Todos</option>' +
       nomes.map(n=>`<option value="${n}">${n}</option>`).join('');
@@ -654,7 +701,9 @@ document.querySelectorAll('.tabbtn').forEach(btn=>{
 
   function render(){
     const filt = baseFiltrado();
-    atualizaDropdownConsultor(filt);
+    const aggMap = aggregaPorConsultor(filt);
+    atualizaBotoesOtimiza(aggMap);
+    atualizaDropdownConsultor(filt, aggMap);
     document.getElementById('kpiT-cxp').textContent = filt.length;
     document.getElementById('kpiQ-cxp').textContent = filt.filter(r=>r.tend==='queda').length;
     document.getElementById('kpiA-cxp').textContent = filt.filter(r=>r.tend!=='queda').length;
@@ -667,6 +716,10 @@ document.querySelectorAll('.tabbtn').forEach(btn=>{
 
     const q = query.trim().toLowerCase();
     let rows = filt.filter(r => {
+      if(otimizaFiltro !== 'todos'){
+        const agg = aggMap[r.cons];
+        if(!agg || agg.bucket !== otimizaFiltro) return false;
+      }
       if(tendFiltro !== 'todos' && r.tend !== tendFiltro) return false;
       if(consultorFiltro !== 'todos' && r.cons !== consultorFiltro) return false;
       if(!q) return true;
@@ -719,6 +772,13 @@ document.querySelectorAll('.tabbtn').forEach(btn=>{
     btn.addEventListener('click', function(){
       tendFiltro = this.dataset.v;
       document.querySelectorAll('#filtroTend-cxp button').forEach(b=>b.classList.remove('active'));
+      this.classList.add('active'); render();
+    });
+  });
+  document.querySelectorAll('#filtroOtimiza-cxp button').forEach(btn=>{
+    btn.addEventListener('click', function(){
+      otimizaFiltro = this.dataset.v;
+      document.querySelectorAll('#filtroOtimiza-cxp button').forEach(b=>b.classList.remove('active'));
       this.classList.add('active'); render();
     });
   });
