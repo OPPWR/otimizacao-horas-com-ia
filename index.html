@@ -216,16 +216,17 @@
 
     <div class="callout">
       <div class="tag">Leitura crítica</div>
-      <h2>Isolando quem viveu a transformação inteira, o ganho é modesto e real</h2>
+      <h2>É aumento de horas, não redução — e a maioria não reduz</h2>
       <p>Restringindo a análise a quem já estava alocado desde Dez/25 (antes da IA) e segue ativo hoje — excluindo
       contratações feitas ao longo do período — o total de horas debitadas cresceu <strong>11,0%</strong> de
-      Dez–Mar para Abr–Jul. É um número bem mais modesto que o agregado com todo mundo, e bem mais perto do ganho
-      por pessoa controlado: olhando as mesmas 42 pessoas o período inteiro, o ganho real foi de <strong>
-      6,7%</strong>, com ocupação média caindo levemente. Não é um movimento uniforme: 31 subiram, 10 caíram, 1
-      estável.</p>
-      <p>Esta base não registra quem de fato usa IA no dia a dia, então mesmo o +6,7%–11,0% não pode ser atribuído
-      à IA com confiança — mas é a leitura mais limpa possível com os dados disponíveis: gente que já estava no
-      time antes da IA chegar, sem o ruído de headcount novo nem de gente que saiu.</p>
+      Dez–Mar para Abr–Jul, e por pessoa (as mesmas 42 pessoas o período inteiro) cresceu <strong>6,7%</strong>.
+      <strong>Os dois números são aumento, não redução</strong> — em nenhum recorte o time está gastando menos
+      tempo no total. Pessoa a pessoa também é minoria: dos 42, <strong>31 subiram e só 10 caíram</strong>. Na
+      ponta mais granular (consultor × projeto, aba ao lado), só <strong>7 dos 30 consultores reduzem horas</strong>
+      nos projetos em que atuam — a maioria (23) mantém ou aumenta.</p>
+      <p>Ou seja: não há evidência de otimização/redução de horas na base agregada — o que existe é um pequeno
+      grupo específico reduzindo, cercado por uma maioria estável ou em alta. Esta base não registra quem de fato
+      usa IA no dia a dia, então nem o pequeno grupo que reduz pode ser atribuído à IA com confiança.</p>
     </div>
 
     <div class="card">
@@ -233,7 +234,9 @@
       <p class="sub">Ativos o período inteiro (débito nos 8 meses), cargo elegível a débito (fora Sênior,
       Coordenador, Supervisor, Sócio), ainda ativos hoje (constam na aba Usuários) e já alocados desde Dez/25
       (aba Alocações) — exclui contratações feitas ao longo do período. Cargo vem da aba Usuários. Horas
-      realizadas excluem débitos de Deslocamento (fonte: Débitos BH, Bases SPWR).</p>
+      realizadas <strong>somam todos os projetos da pessoa, internos e externos juntos</strong> (esta aba não tem
+      filtro de Projeto Interno — só as abas Projetos e Projetos x Consultor têm) e excluem débitos de
+      Deslocamento (fonte: Débitos BH, Bases SPWR).</p>
 
       <div class="controls">
         <div class="search"><input id="search-geral" type="text" placeholder="Buscar consultor ou cargo…"></div>
@@ -468,6 +471,14 @@
           <button data-v="alta">Alta</button>
         </div>
         <span class="count-pill" id="countPill-proj"></span>
+      </div>
+      <div class="controls">
+        <span class="filter-label">Projeto está…</span>
+        <div class="segmented" id="filtroOtimiza-proj">
+          <button data-v="todos" class="active">Todos</button>
+          <button data-v="otimizando">▼ Otimizando horas desde a IA</button>
+          <button data-v="nao">▲ Não otimizando desde a IA</button>
+        </div>
       </div>
 
       <div class="table-scroll">
@@ -797,7 +808,7 @@ document.querySelectorAll('.tabbtn').forEach(btn=>{
 
 /* ===================== PAINEL PROJETOS ===================== */
 (function(){
-  let internoFiltro = 'nao', unidadeFiltro = 'todos', tendFiltro = 'todos', query = '';
+  let internoFiltro = 'nao', unidadeFiltro = 'todos', tendFiltro = 'todos', otimizaFiltro = 'todos', query = '';
   let sortKey = 'vp', sortDir = -1;
 
   function baseFiltrado(){
@@ -809,8 +820,17 @@ document.querySelectorAll('.tabbtn').forEach(btn=>{
     });
   }
 
+  function atualizaBotoesOtimiza(filt){
+    const nOt = filt.filter(r=>r.tend==='queda').length;
+    const nNao = filt.length - nOt;
+    const box = document.getElementById('filtroOtimiza-proj');
+    box.querySelector('[data-v="otimizando"]').textContent = `▼ Otimizando horas desde a IA (${nOt})`;
+    box.querySelector('[data-v="nao"]').textContent = `▲ Não otimizando desde a IA (${nNao})`;
+  }
+
   function render(){
     const filt = baseFiltrado();
+    atualizaBotoesOtimiza(filt);
     document.getElementById('kpiT-proj').textContent = filt.length;
     document.getElementById('kpiQ-proj').textContent = filt.filter(r=>r.tend==='queda').length;
     document.getElementById('kpiA-proj').textContent = filt.filter(r=>r.tend!=='queda').length;
@@ -828,6 +848,8 @@ document.querySelectorAll('.tabbtn').forEach(btn=>{
 
     const q = query.trim().toLowerCase();
     let rows = filt.filter(r => {
+      if(otimizaFiltro === 'otimizando' && r.tend !== 'queda') return false;
+      if(otimizaFiltro === 'nao' && r.tend === 'queda') return false;
       if(tendFiltro !== 'todos' && r.tend !== tendFiltro) return false;
       if(!q) return true;
       return r.nome.toLowerCase().includes(q);
@@ -873,6 +895,13 @@ document.querySelectorAll('.tabbtn').forEach(btn=>{
     btn.addEventListener('click', function(){
       tendFiltro = this.dataset.v;
       document.querySelectorAll('#filtroTend-proj button').forEach(b=>b.classList.remove('active'));
+      this.classList.add('active'); render();
+    });
+  });
+  document.querySelectorAll('#filtroOtimiza-proj button').forEach(btn=>{
+    btn.addEventListener('click', function(){
+      otimizaFiltro = this.dataset.v;
+      document.querySelectorAll('#filtroOtimiza-proj button').forEach(b=>b.classList.remove('active'));
       this.classList.add('active'); render();
     });
   });
