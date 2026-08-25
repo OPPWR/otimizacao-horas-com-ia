@@ -528,7 +528,7 @@ document.querySelectorAll('.tabbtn').forEach(btn=>{
 
 /* ===================== PAINEL GERAL ===================== */
 (function(){
-  let sortKey = 'nome', sortDir = 1, query = '';
+  let sortKey = 'vp', sortDir = -1, query = '';
   function render(){
     const q = query.trim().toLowerCase();
     let rows = DATA_GERAL.filter(r => !q || r.nome.toLowerCase().includes(q) || (r.cargo||'').toLowerCase().includes(q));
@@ -565,7 +565,7 @@ document.querySelectorAll('.tabbtn').forEach(btn=>{
 /* ===================== PAINEL PROJETOS X CONSULTOR ===================== */
 (function(){
   let internoFiltro = 'nao', unidadeFiltro = 'todos', tendFiltro = 'todos', query = '';
-  let sortKey = 'vp', sortDir = 1;
+  let sortKey = 'vp', sortDir = -1;
 
   function baseFiltrado(){
     return DATA_CXP.filter(r => {
@@ -653,7 +653,7 @@ document.querySelectorAll('.tabbtn').forEach(btn=>{
 /* ===================== PAINEL PROJETOS ===================== */
 (function(){
   let internoFiltro = 'nao', unidadeFiltro = 'todos', tendFiltro = 'todos', query = '';
-  let sortKey = 'vp', sortDir = 1;
+  let sortKey = 'vp', sortDir = -1;
 
   function baseFiltrado(){
     return DATA_PROJ.filter(r => {
