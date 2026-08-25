@@ -687,9 +687,9 @@ document.querySelectorAll('.tabbtn').forEach(btn=>{
     if(nomes.includes(atual)){ sel.value = atual; } else { consultorFiltro = 'todos'; sel.value = 'todos'; }
   }
 
-  function renderResumoConsultor(rowsDoConsultor){
+  function renderResumoConsultor(rowsDoConsultor, nome){
     const el = document.getElementById('consultorResumo-cxp');
-    if(consultorFiltro === 'todos' || !rowsDoConsultor.length){
+    if(!nome || !rowsDoConsultor.length){
       el.className = 'consultor-resumo';
       el.innerHTML = '';
       return;
@@ -705,7 +705,7 @@ document.querySelectorAll('.tabbtn').forEach(btn=>{
     el.className = 'consultor-resumo show';
     el.innerHTML = `
       <div>
-        <div class="cr-nome">${consultorFiltro}</div>
+        <div class="cr-nome">${nome}</div>
         <div class="cr-cargo">${cargo}</div>
       </div>
       <div class="cr-stat">${rowsDoConsultor.length} projeto${rowsDoConsultor.length===1?'':'s'} neste recorte</div>
@@ -751,7 +751,8 @@ document.querySelectorAll('.tabbtn').forEach(btn=>{
       return (av-bv) * sortDir;
     });
 
-    renderResumoConsultor(consultorFiltro === 'todos' ? [] : rows);
+    const consultoresNaTabela = Array.from(new Set(rows.map(r=>r.cons)));
+    renderResumoConsultor(consultoresNaTabela.length === 1 ? rows : [], consultoresNaTabela.length === 1 ? consultoresNaTabela[0] : null);
 
     document.getElementById('countPill-cxp').textContent = rows.length + ' de ' + filt.length + ' pares';
     document.getElementById('tbody-cxp').innerHTML = rows.map(r => `
