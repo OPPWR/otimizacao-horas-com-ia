@@ -80,6 +80,10 @@
   .card .sub{font-size:12.5px;color:var(--ink-mute);margin:0 0 18px;}
   .legend{display:flex;gap:18px;font-size:12px;color:var(--ink-mute);margin-top:10px;flex-wrap:wrap;}
   .legend .dot{display:inline-block;width:9px;height:9px;border-radius:2px;margin-right:6px;vertical-align:middle;}
+  .card.chart-card{padding:16px 22px 12px;}
+  .card.chart-card h3{text-align:center;}
+  .card.chart-card .sub{text-align:center;margin:0 0 8px;}
+  .card.chart-card .legend{justify-content:center;margin:0 0 6px;gap:22px;}
 
   .controls{display:flex;gap:10px;align-items:center;margin-bottom:14px;flex-wrap:wrap;}
   .search{flex:1;min-width:190px;position:relative;}
@@ -274,39 +278,38 @@
       cresce, na mesma direção das horas debitadas. Mesma ressalva de sempre: correlação, não causa.</p>
     </div>
 
-    <div class="card">
+    <div class="card chart-card">
       <h3>Banco de horas positivo — soma mensal (só saldos > 0, todos os consultores)</h3>
       <p class="sub" id="chartSub-bh">Soma mensal do banco de horas, contando só quem está com saldo positivo naquele mês.</p>
+      <div class="legend">
+        <span><i class="dot" style="background:var(--brand-light)"></i>Sem IA (Nov–Mar)</span>
+        <span><i class="dot" style="background:var(--accent)"></i>Com IA (Abr–Jul)</span>
+      </div>
       <div id="chart-bh"></div>
-      <div class="legend">
-        <span><i class="dot" style="background:var(--brand-light)"></i>Sem IA (Nov–Mar)</span>
-        <span><i class="dot" style="background:var(--accent)"></i>Com IA (Abr–Jul)</span>
-      </div>
     </div>
 
-    <div class="card">
+    <div class="card chart-card">
       <h3>Banco de horas positivo em R$ — soma mensal (só saldos > 0, todos os consultores)</h3>
-      <p class="sub">Mesmo critério do gráfico acima, em valor monetário: soma mensal do custo do saldo positivo
-      de banco de horas (coluna "Custo do Banco Acumulado" da base, presente exatamente quando o saldo em horas é
-      positivo naquele mês).</p>
-      <div id="chart-bh-money"></div>
+      <p class="sub">Mesmo critério do gráfico acima, em valor monetário: soma do custo do saldo positivo (coluna
+      "Custo do Banco Acumulado", presente exatamente quando o saldo em horas é positivo naquele mês).</p>
       <div class="legend">
         <span><i class="dot" style="background:var(--brand-light)"></i>Sem IA (Nov–Mar)</span>
         <span><i class="dot" style="background:var(--accent)"></i>Com IA (Abr–Jul)</span>
       </div>
+      <div id="chart-bh-money"></div>
     </div>
 
-    <div class="card">
+    <div class="card chart-card">
       <h3>Variação de horas por mês (banco de horas positivo)</h3>
-      <p class="sub">Diferença mês a mês (mês atual − mês anterior) da soma mensal em horas do gráfico acima.
-      Novembro não tem barra por não ter mês anterior no recorte.</p>
+      <p class="sub">Diferença mês a mês (mês atual − mês anterior). Novembro não tem barra por não ter mês
+      anterior no recorte.</p>
       <div id="chart-bh-delta-h"></div>
     </div>
 
-    <div class="card">
+    <div class="card chart-card">
       <h3>Variação monetária por mês (banco de horas positivo)</h3>
-      <p class="sub">Diferença mês a mês (mês atual − mês anterior) da soma mensal em R$ do gráfico acima.
-      Novembro não tem barra por não ter mês anterior no recorte.</p>
+      <p class="sub">Diferença mês a mês (mês atual − mês anterior). Novembro não tem barra por não ter mês
+      anterior no recorte.</p>
       <div id="chart-bh-delta-money"></div>
     </div>
 
@@ -389,14 +392,14 @@
       <p>Pré-filtrado sem projetos internos (PWR, ACG etc.) — use "Projeto interno" pra incluir de volta.</p>
     </div>
 
-    <div class="card">
+    <div class="card chart-card">
       <h3>Horas totais debitadas por mês, neste recorte</h3>
       <p class="sub" id="chartSub-cxp">Soma mensal dos pares filtrados abaixo.</p>
-      <div id="chart-cxp"></div>
       <div class="legend">
         <span><i class="dot" style="background:var(--brand-light)"></i>Sem IA (Nov–Mar)</span>
         <span><i class="dot" style="background:var(--accent)"></i>Com IA (Abr–Jul)</span>
       </div>
+      <div id="chart-cxp"></div>
     </div>
 
     <div class="card">
@@ -512,14 +515,14 @@
       Bases SPWR).</p>
     </div>
 
-    <div class="card">
+    <div class="card chart-card">
       <h3>Horas totais debitadas por mês, neste recorte de projetos</h3>
       <p class="sub" id="chartSub-proj">Soma mensal dos projetos filtrados abaixo.</p>
-      <div id="chart-proj"></div>
       <div class="legend">
         <span><i class="dot" style="background:var(--brand-light)"></i>Sem IA (Nov–Mar)</span>
         <span><i class="dot" style="background:var(--accent)"></i>Com IA (Abr–Jul)</span>
       </div>
+      <div id="chart-proj"></div>
     </div>
 
     <div class="card">
@@ -637,14 +640,14 @@
       correlacional, não causal.</p>
     </div>
 
-    <div class="card">
+    <div class="card chart-card">
       <h3>Horas totais debitadas por mês, neste recorte</h3>
       <p class="sub" id="chartSub-ger">Soma mensal dos projetos filtrados abaixo, agrupados por gerente.</p>
-      <div id="chart-ger"></div>
       <div class="legend">
         <span><i class="dot" style="background:var(--brand-light)"></i>Sem IA (Nov–Mar)</span>
         <span><i class="dot" style="background:var(--accent)"></i>Com IA (Abr–Jul)</span>
       </div>
+      <div id="chart-ger"></div>
     </div>
 
     <div class="card">
@@ -765,7 +768,7 @@ function badgeTend(vp, va, tend){
 function drawChart(elId, rows, fmt){
   fmt = fmt || (v => Math.round(v).toLocaleString('pt-BR'));
   const el = document.getElementById(elId);
-  const W = 1000, H = 148, padL = 44, padR = 20, padT = 20, padB = 24;
+  const W = 1000, H = 122, padL = 44, padR = 20, padT = 18, padB = 22;
   const plotW = W - padL - padR, plotH = H - padT - padB;
   const n = MESES.length;
 
@@ -807,7 +810,7 @@ function drawDeltaChart(elId, meses, deltas, fmt){
   // Grafico de barras divergente (mes a mes vs mes anterior), primeiro mes sem barra (sem base de comparacao)
   fmt = fmt || (v => (v>0?'+':'') + Math.round(v).toLocaleString('pt-BR'));
   const el = document.getElementById(elId);
-  const W = 1000, H = 148, padL = 44, padR = 20, padT = 26, padB = 24;
+  const W = 1000, H = 122, padL = 44, padR = 20, padT = 20, padB = 24;
   const plotW = W - padL - padR, plotH = H - padT - padB;
   const n = meses.length;
   const barW = (plotW/n) * 0.5;
