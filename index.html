@@ -280,7 +280,6 @@
 
     <div class="card chart-card">
       <h3>Banco de horas positivo — soma mensal (só saldos > 0, todos os consultores)</h3>
-      <p class="sub" id="chartSub-bh">Soma mensal do banco de horas, contando só quem está com saldo positivo naquele mês.</p>
       <div class="legend">
         <span><i class="dot" style="background:var(--brand-light)"></i>Sem IA (Nov–Mar)</span>
         <span><i class="dot" style="background:var(--accent)"></i>Com IA (Abr–Jul)</span>
@@ -290,8 +289,6 @@
 
     <div class="card chart-card">
       <h3>Banco de horas positivo em R$ — soma mensal (só saldos > 0, todos os consultores)</h3>
-      <p class="sub">Mesmo critério do gráfico acima, em valor monetário: soma do custo do saldo positivo (coluna
-      "Custo do Banco Acumulado", presente exatamente quando o saldo em horas é positivo naquele mês).</p>
       <div class="legend">
         <span><i class="dot" style="background:var(--brand-light)"></i>Sem IA (Nov–Mar)</span>
         <span><i class="dot" style="background:var(--accent)"></i>Com IA (Abr–Jul)</span>
@@ -301,15 +298,11 @@
 
     <div class="card chart-card">
       <h3>Variação de horas por mês (banco de horas positivo)</h3>
-      <p class="sub">Diferença mês a mês (mês atual − mês anterior). Novembro não tem barra por não ter mês
-      anterior no recorte.</p>
       <div id="chart-bh-delta-h"></div>
     </div>
 
     <div class="card chart-card">
       <h3>Variação monetária por mês (banco de horas positivo)</h3>
-      <p class="sub">Diferença mês a mês (mês atual − mês anterior). Novembro não tem barra por não ter mês
-      anterior no recorte.</p>
       <div id="chart-bh-delta-money"></div>
     </div>
 
@@ -394,7 +387,6 @@
 
     <div class="card chart-card">
       <h3>Horas totais debitadas por mês, neste recorte</h3>
-      <p class="sub" id="chartSub-cxp">Soma mensal dos pares filtrados abaixo.</p>
       <div class="legend">
         <span><i class="dot" style="background:var(--brand-light)"></i>Sem IA (Nov–Mar)</span>
         <span><i class="dot" style="background:var(--accent)"></i>Com IA (Abr–Jul)</span>
@@ -517,7 +509,6 @@
 
     <div class="card chart-card">
       <h3>Horas totais debitadas por mês, neste recorte de projetos</h3>
-      <p class="sub" id="chartSub-proj">Soma mensal dos projetos filtrados abaixo.</p>
       <div class="legend">
         <span><i class="dot" style="background:var(--brand-light)"></i>Sem IA (Nov–Mar)</span>
         <span><i class="dot" style="background:var(--accent)"></i>Com IA (Abr–Jul)</span>
@@ -642,7 +633,6 @@
 
     <div class="card chart-card">
       <h3>Horas totais debitadas por mês, neste recorte</h3>
-      <p class="sub" id="chartSub-ger">Soma mensal dos projetos filtrados abaixo, agrupados por gerente.</p>
       <div class="legend">
         <span><i class="dot" style="background:var(--brand-light)"></i>Sem IA (Nov–Mar)</span>
         <span><i class="dot" style="background:var(--accent)"></i>Com IA (Abr–Jul)</span>
@@ -1032,9 +1022,6 @@ document.querySelectorAll('.tabbtn').forEach(btn=>{
     document.getElementById('kpiA-cxp').textContent = filt.filter(r=>r.tend!=='queda').length;
     document.getElementById('kpiC-cxp').textContent = new Set(filt.map(r=>r.cons)).size;
     document.getElementById('kpiP-cxp').textContent = new Set(filt.map(r=>r.proj)).size;
-    document.getElementById('chartSub-cxp').textContent = `Soma mensal de ${filt.length} pares` +
-      (internoFiltro==='nao' ? ' (só projeto externo/cliente)' : internoFiltro==='sim' ? ' (só projeto interno)' : ' (interno + externo)') +
-      (unidadeFiltro!=='todos' ? `, unidade ${unidadeFiltro}.` : '.');
     drawChart('chart-cxp', filt);
 
     const q = query.trim().toLowerCase();
@@ -1151,9 +1138,6 @@ document.querySelectorAll('.tabbtn').forEach(btn=>{
     const varPct = semT ? (comT/semT-1)*100 : null;
     document.getElementById('kpiV-proj').innerHTML = fmtPct(varPct===null?null:Math.round(varPct*10)/10) + '<span class="unit"></span>';
 
-    document.getElementById('chartSub-proj').textContent = `Soma mensal de ${filt.length} projetos` +
-      (internoFiltro==='nao' ? ' (só externos/cliente)' : internoFiltro==='sim' ? ' (só internos)' : ' (interno + externo)') +
-      (unidadeFiltro!=='todos' ? `, unidade ${unidadeFiltro}.` : '.');
     drawChart('chart-proj', filt);
 
     const q = query.trim().toLowerCase();
@@ -1320,9 +1304,6 @@ document.querySelectorAll('.tabbtn').forEach(btn=>{
     const varPctTot = semT ? (comT/semT-1)*100 : null;
     document.getElementById('kpiV-ger').innerHTML = fmtPct(varPctTot===null?null:Math.round(varPctTot*10)/10) + '<span class="unit"></span>';
 
-    document.getElementById('chartSub-ger').textContent = `Soma mensal de ${filt.length} projetos` +
-      (internoFiltro==='nao' ? ' (só externos/cliente)' : internoFiltro==='sim' ? ' (só internos)' : ' (interno + externo)') +
-      (unidadeFiltro!=='todos' ? `, unidade ${unidadeFiltro}.` : '.');
     drawChart('chart-ger', filt);
 
     const q = query.trim().toLowerCase();
