@@ -765,7 +765,7 @@ function badgeTend(vp, va, tend){
 function drawChart(elId, rows, fmt){
   fmt = fmt || (v => Math.round(v).toLocaleString('pt-BR'));
   const el = document.getElementById(elId);
-  const W = 1000, H = 220, padL = 44, padR = 20, padT = 24, padB = 30;
+  const W = 1000, H = 148, padL = 44, padR = 20, padT = 20, padB = 24;
   const plotW = W - padL - padR, plotH = H - padT - padB;
   const n = MESES.length;
 
@@ -807,7 +807,7 @@ function drawDeltaChart(elId, meses, deltas, fmt){
   // Grafico de barras divergente (mes a mes vs mes anterior), primeiro mes sem barra (sem base de comparacao)
   fmt = fmt || (v => (v>0?'+':'') + Math.round(v).toLocaleString('pt-BR'));
   const el = document.getElementById(elId);
-  const W = 1000, H = 220, padL = 44, padR = 20, padT = 34, padB = 30;
+  const W = 1000, H = 148, padL = 44, padR = 20, padT = 26, padB = 24;
   const plotW = W - padL - padR, plotH = H - padT - padB;
   const n = meses.length;
   const barW = (plotW/n) * 0.5;
@@ -829,7 +829,7 @@ function drawDeltaChart(elId, meses, deltas, fmt){
     const y = v >= 0 ? zeroY - h : zeroY;
     const barH = Math.max(2, h);
     bars += `<rect x="${cx-barW/2}" y="${y}" width="${barW}" height="${barH}" rx="3" fill="${color}"></rect>`;
-    const labelY = v >= 0 ? (zeroY - h - 8) : (zeroY + h + 16);
+    const labelY = v >= 0 ? (zeroY - h - 8) : (zeroY + h + 12);
     bars += `<text x="${cx}" y="${labelY}" text-anchor="middle" font-size="10.5" font-weight="700" fill="${color}" font-family="IBM Plex Mono, monospace">${fmt(v)}</text>`;
   }
   const zeroLine = `<line x1="${padL}" y1="${zeroY}" x2="${W-padR}" y2="${zeroY}" stroke="var(--ink-mute)" stroke-width="1" opacity="0.3"></line>`;
