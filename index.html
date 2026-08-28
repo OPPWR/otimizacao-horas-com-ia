@@ -858,11 +858,14 @@ function fmtBRL(v){
 }
 
 function drawMultiTrendChart(elId, series){
-  // Varias linhas de escalas bem diferentes no mesmo grafico -- cada serie usa
-  // seu proprio min/max (nao um eixo compartilhado), pra dar pra comparar a
-  // FORMA da tendencia mesmo com metricas de grandezas distintas.
+  // Varias linhas de escalas bem diferentes no mesmo grafico. Em vez de todas
+  // dividirem o mesmo espaco vertical (o que faz elas se cruzarem sem sentido,
+  // ja que sao grandezas diferentes), cada serie fica confinada numa FAIXA
+  // (banda) vertical propria, na ordem definida por quem chama — maior grandeza
+  // em cima, sem nunca se misturar com as outras. Dentro da propria banda, cada
+  // serie ainda usa seu proprio min/max, pra mostrar a tendencia dela.
   const el = document.getElementById(elId);
-  const W = 1000, H = 148, padL = 44, padR = 20, padT = 20, padB = 24;
+  const W = 1000, H = 190, padL = 44, padR = 20, padT = 18, padB = 22;
   const plotW = W - padL - padR, plotH = H - padT - padB;
   const n = MESES.length;
 
@@ -882,7 +885,9 @@ function drawMultiTrendChart(elId, series){
     const minV = Math.min(...vals), maxV = Math.max(...vals);
     const pad = (maxV - minV) * 0.3 || (maxV * 0.1) || 1;
     const lo = minV - pad, hi = maxV + pad;
-    const pts = vals.map((v,i) => [padL + (plotW/n) * (i+0.5), padT + plotH - ((v-lo)/(hi-lo)) * plotH]);
+    const bandTopPx = padT + s.bandTop * plotH;
+    const bandHeightPx = s.bandHeight * plotH;
+    const pts = vals.map((v,i) => [padL + (plotW/n) * (i+0.5), bandTopPx + bandHeightPx - ((v-lo)/(hi-lo)) * bandHeightPx]);
     for(let i=0;i<pts.length-1;i++){
       content += `<line x1="${pts[i][0]}" y1="${pts[i][1]}" x2="${pts[i+1][0]}" y2="${pts[i+1][1]}" stroke="${s.color}" stroke-width="2.2" stroke-linecap="round" opacity="${s.opacity||1}"></line>`;
     }
@@ -1069,9 +1074,9 @@ document.querySelectorAll('.tabbtn').forEach(btn=>{
   drawChart('chart-bh-money', [{h: BH_MONTH_TOTALS_MONEY}], fmtBRL);
   drawTwoLineChart('chart-lid-op', OCUP_LIDERANCA, OCUP_OPERACIONAL, 'var(--brand-dark)', 'var(--accent)', v => Math.round(v) + '%');
   drawMultiTrendChart('chart-proj-ativos', [
-    {values: PROJ_ATIVOS, color: 'var(--accent)', fmt: v => Math.round(v).toLocaleString('pt-BR'), labelOffset: -10},
-    {values: QTD_CONSULTORES, color: 'var(--brand-dark)', fmt: v => Math.round(v).toLocaleString('pt-BR'), labelOffset: 16},
-    {values: PROJ_POR_CONSULTOR, color: 'var(--brand-mid)', fmt: v => v.toLocaleString('pt-BR',{minimumFractionDigits:1,maximumFractionDigits:1}), labelOffset: -18},
+    {values: PROJ_ATIVOS, color: 'var(--accent)', fmt: v => Math.round(v).toLocaleString('pt-BR'), labelOffset: -10, bandTop: 0.00, bandHeight: 0.44},
+    {values: QTD_CONSULTORES, color: 'var(--brand-dark)', fmt: v => Math.round(v).toLocaleString('pt-BR'), labelOffset: -10, bandTop: 0.48, bandHeight: 0.26},
+    {values: PROJ_POR_CONSULTOR, color: 'var(--brand-mid)', fmt: v => v.toLocaleString('pt-BR',{minimumFractionDigits:1,maximumFractionDigits:1}), labelOffset: -9, bandTop: 0.78, bandHeight: 0.22},
   ]);
   renderResumoSemComIA();
 
